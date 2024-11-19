@@ -53,48 +53,46 @@ class Application:
         self.root.geometry("800x400")  # Increased window width
 
         self.main_frame = tk.Frame(self.root)
-        self.main_frame.pack(pady=20, side=tk.LEFT, fill=tk.Y)  # Pack to the left and fill vertically
+        self.main_frame.pack(pady=20, side=tk.LEFT, fill=tk.Y)
 
         self.create_widgets()
 
         # Create a frame for the right side content
-        self.right_frame = tk.Frame(self.root, width=400, height=400)  # Fixed width and height
-        self.right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)  # Pack to the left and fill space
+        self.right_frame = tk.Frame(self.root, width=400, height=400)
+        self.right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
     def create_widgets(self):
         # Buttons for different management systems
-        tk.Button(self.main_frame, text="Student Management", width=20, command=self.open_student_management).grid(row=0, column=0, pady=5)
-        tk.Button(self.main_frame, text="Instructor Management", width=20, command=self.open_instructor_management).grid(row=1, column=0, pady=5)
-        tk.Button(self.main_frame, text="Lesson Management", width=20, command=self.open_lesson_management).grid(row=2, column=0, pady=5)
-        tk.Button(self.main_frame, text="Reporting", width=20, command=self.open_reporting).grid(row=3, column=0, pady=5)
-    
-    # Open Student Management Window
-    def open_student_management(self):
-        student_window = StudentManagement(self.root)
-    
-    # Open Instructor Management Window
-    def open_instructor_management(self):
-        instructor_window = InstructorManagement(self.root)
-    
-    # Open Lesson Management Window
-    def open_lesson_management(self):
-        lesson_window = LessonManagement(self.root)
+        tk.Button(self.main_frame, text="Student Management", width=20, 
+                  command=lambda: self.open_management_window(StudentManagement)).grid(row=0, column=0, pady=5)
+        tk.Button(self.main_frame, text="Instructor Management", width=20, 
+                  command=lambda: self.open_management_window(InstructorManagement)).grid(row=1, column=0, pady=5)
+        tk.Button(self.main_frame, text="Lesson Management", width=20, 
+                  command=lambda: self.open_management_window(LessonManagement)).grid(row=2, column=0, pady=5)
+        tk.Button(self.main_frame, text="Reporting", width=20, 
+                  command=lambda: self.open_management_window(Reporting)).grid(row=3, column=0, pady=5)
 
-    # Open Reporting Window
-    def open_reporting(self):
-        reporting_window = Reporting(self.root)
+    def open_management_window(self, window_class):
+        # Clear any existing widgets in the right frame
+        for widget in self.right_frame.winfo_children():
+            widget.destroy()
+
+        # Create an instance of the window class and pass the right frame as the parent
+        window_instance = window_class(self.right_frame)  
 
 # Student Management Window
 class StudentManagement:
-    def __init__(self, root):
-        self.window = tk.Toplevel(root)
-        self.window.title("Student Management")
-        
+    def __init__(self, parent_frame):
+        self.window = parent_frame  
+
         self.add_student_button = tk.Button(self.window, text="Add Student", command=self.add_student)
         self.add_student_button.pack(pady=10)
         
         self.view_students_button = tk.Button(self.window, text="View Students", command=self.view_students)
         self.view_students_button.pack(pady=10)
+
+        self.delete_student_button = tk.Button(self.window, text="Delete Student", command=self.delete_student)
+        self.delete_student_button.pack(pady=10)
     
     def add_student(self):
         # Create a new window for the form
@@ -166,32 +164,20 @@ class StudentManagement:
             conn.close()
             messagebox.showinfo("Success", "Student deleted successfully!")
 
-    def __init__(self, root):
-        self.window = tk.Toplevel(root)
-        self.window.title("Student Management")
-
-        self.add_student_button = tk.Button(self.window, text="Add Student", command=self.add_student)
-        self.add_student_button.pack(pady=10)
-
-        self.view_students_button = tk.Button(self.window, text="View Students", command=self.view_students)
-        self.view_students_button.pack(pady=10)
-
-        self.delete_student_button = tk.Button(self.window, text="Delete Student", command=self.delete_student)
-        self.delete_student_button.pack(pady=10)
-
-
 # Instructor Management Window
 class InstructorManagement:
-    def __init__(self, root):
-        self.window = tk.Toplevel(root)
-        self.window.title("Instructor Management")
-        
+    def __init__(self, parent_frame):
+        self.window = parent_frame
+
         self.add_instructor_button = tk.Button(self.window, text="Add Instructor", command=self.add_instructor)
         self.add_instructor_button.pack(pady=10)
         
         self.view_instructors_button = tk.Button(self.window, text="View Instructors", command=self.view_instructors)
         self.view_instructors_button.pack(pady=10)
     
+        self.delete_instructor_button = tk.Button(self.window, text="Delete Instructor", command=self.delete_instructor)
+        self.delete_instructor_button.pack(pady=10)
+
     def add_instructor(self):
         # Create a new window for the form
         add_instructor_window = tk.Toplevel(self.window)
@@ -241,6 +227,7 @@ class InstructorManagement:
         
         for instructor in instructors:
             tk.Label(instructor_list_window, text=f"ID: {instructor[0]}, Name: {instructor[1]}").pack(pady=5)
+
     def delete_instructor(self):
         instructor_id = simpledialog.askinteger("Input", "Enter instructor ID to delete:")
         if instructor_id is not None:
@@ -251,32 +238,23 @@ class InstructorManagement:
             conn.close()
             messagebox.showinfo("Success", "Instructor deleted successfully!")
 
-    def __init__(self, root):
-        self.window = tk.Toplevel(root)
-        self.window.title("Instructor Management")
-
-        self.add_instructor_button = tk.Button(self.window, text="Add Instructor", command=self.add_instructor)
-        self.add_instructor_button.pack(pady=10)
-
-        self.view_instructors_button = tk.Button(self.window, text="View Instructors", command=self.view_instructors)
-        self.view_instructors_button.pack(pady=10)
-
-        self.delete_instructor_button = tk.Button(self.window, text="Delete Instructor", command=self.delete_instructor)
-        self.delete_instructor_button.pack(pady=10)
-
-
 # Lesson Management Window
 class LessonManagement:
-    def __init__(self, root):
-        self.window = tk.Toplevel(root)
-        self.window.title("Lesson Management")
-        
+    def __init__(self, parent_frame):
+        self.window = parent_frame
+
         self.book_lesson_button = tk.Button(self.window, text="Book Lesson", command=self.book_lesson)
         self.book_lesson_button.pack(pady=10)
+
+        self.view_lessons_button = tk.Button(self.window, text="View Lessons", command=self.view_lessons)
+        self.view_lessons_button.pack(pady=10)
+
+        self.delete_lesson_button = tk.Button(self.window, text="Delete Lesson", command=self.delete_lesson)
+        self.delete_lesson_button.pack(pady=10)
     
     def book_lesson(self):
         # Create a new window for the form
-        book_lesson_window = tk.Toplevel(self.window)  # This was the missing indentation
+        book_lesson_window = tk.Toplevel(self.window)
         book_lesson_window.title("Book Lesson")
 
         # Create labels and entry fields for each lesson attribute
@@ -288,7 +266,6 @@ class LessonManagement:
         instructor_id_entry = tk.Entry(book_lesson_window)
         instructor_id_entry.grid(row=1, column=1, padx=5, pady=5)
 
-        
         tk.Label(book_lesson_window, text="Lesson Type:").grid(row=2, column=0, padx=5, pady=5)
 
         # Create a combobox for lesson type with levels 1 to 10
@@ -305,7 +282,7 @@ class LessonManagement:
         def submit_data():
             student_id = student_id_entry.get()
             instructor_id = instructor_id_entry.get()
-            lesson_type = lesson_type_var.get()
+            lesson_type = lesson_type_var.get()  # Get the lesson type from the combobox
             date = date_entry.get()
 
             conn = sqlite3.connect("driving_school.db")
@@ -341,6 +318,7 @@ class LessonManagement:
             Status: {lesson[5]}
             """
             tk.Label(lessons_list_window, text=lesson_details, justify="left").pack(pady=5)
+
     def delete_lesson(self):
         lesson_id = simpledialog.askinteger("Input", "Enter lesson ID to delete:")
         if lesson_id is not None:
@@ -351,34 +329,18 @@ class LessonManagement:
             conn.close()
             messagebox.showinfo("Success", "Lesson deleted successfully!")
 
-    def __init__(self, root):
-        self.window = tk.Toplevel(root)
-        self.window.title("Lesson Management")
-
-        self.book_lesson_button = tk.Button(self.window, text="Book Lesson", command=self.book_lesson)
-        self.book_lesson_button.pack(pady=10)
-
-        self.view_lessons_button = tk.Button(self.window, text="View Lessons", command=self.view_lessons)
-        self.view_lessons_button.pack(pady=10)
-
-        self.delete_lesson_button = tk.Button(self.window, text="Delete Lesson", command=self.delete_lesson)
-        self.delete_lesson_button.pack(pady=10)
-   
-
-
 
 # Reporting Window
 class Reporting:
-    def __init__(self, root):
-        self.window = tk.Toplevel(root)
-        self.window.title("Reporting")
+    def __init__(self, parent_frame):  # Accept parent_frame as argument
+        self.window = parent_frame  # Set self.window to parent_frame
 
         self.generate_report_button = tk.Button(self.window, text="Generate Report", command=self.generate_report)
         self.generate_report_button.pack(pady=10)
 
         self.student_progress_button = tk.Button(self.window, text="Student Progress", command=self.show_student_progress)
         self.student_progress_button.pack(pady=10)
-    
+
     def generate_report(self):
         conn = sqlite3.connect("driving_school.db")
         c = conn.cursor()
@@ -419,6 +381,7 @@ class Reporting:
                 total_progress += lesson_level * 10  # Calculate progress based on level
 
             messagebox.showinfo("Student Progress", f"Student ID: {student_id}\nProgress: {total_progress}%")
+
 
 
 # Main Program
