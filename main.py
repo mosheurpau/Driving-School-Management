@@ -83,100 +83,245 @@ class Application:
 # Student Management Window
 class StudentManagement:
     def __init__(self, parent_frame):
-        self.window = parent_frame  
+        self.window = parent_frame
 
-        self.add_student_button = tk.Button(self.window, text="Add Student", command=self.add_student)
-        self.add_student_button.pack(pady=10)
-        
+        # Buttons
+        self.add_student_button = tk.Button(self.window, text="Add Student", command=self.show_add_student_form)
+        self.add_student_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+
         self.view_students_button = tk.Button(self.window, text="View Students", command=self.view_students)
-        self.view_students_button.pack(pady=10)
+        self.view_students_button.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+
+        self.update_student_button = tk.Button(self.window, text="Update Student", command=self.show_update_student_form)
+        self.update_student_button.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
 
         self.delete_student_button = tk.Button(self.window, text="Delete Student", command=self.delete_student)
-        self.delete_student_button.pack(pady=10)
-    
-    def add_student(self):
-        # Create a new window for the form
-        add_student_window = tk.Toplevel(self.window)
-        add_student_window.title("Add Student")
+        self.delete_student_button.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
 
-        # Create labels and entry fields for each student attribute
-        tk.Label(add_student_window, text="Name:").grid(row=0, column=0, padx=5, pady=5)
-        name_entry = tk.Entry(add_student_window)
-        name_entry.grid(row=0, column=1, padx=5, pady=5)
+        # Configure column weights
+        for i in range(4):
+            self.window.columnconfigure(i, weight=1)
 
-        tk.Label(add_student_window, text="Address:").grid(row=1, column=0, padx=5, pady=5)
-        address_entry = tk.Entry(add_student_window)
-        address_entry.grid(row=1, column=1, padx=5, pady=5)
+        # Frames for forms (initially hidden)
+        self.add_student_frame = tk.Frame(self.window)
+        self.add_student_frame.grid(row=1, column=0, columnspan=4, pady=10)
+        self.add_student_frame.grid_remove()
 
-        tk.Label(add_student_window, text="Phone:").grid(row=2, column=0, padx=5, pady=5)
-        phone_entry = tk.Entry(add_student_window)
-        phone_entry.grid(row=2, column=1, padx=5, pady=5)
+        self.update_student_frame = tk.Frame(self.window)
+        self.update_student_frame.grid(row=1, column=0, columnspan=4, pady=10)
+        self.update_student_frame.grid_remove()
 
-        tk.Label(add_student_window, text="Progress:").grid(row=3, column=0, padx=5, pady=5)
-        progress_entry = tk.Entry(add_student_window)
-        progress_entry.grid(row=3, column=1, padx=5, pady=5)
+        self.view_students_frame = tk.Frame(self.window)
+        self.view_students_frame.grid(row=1, column=0, columnspan=4, pady=10)
+        self.view_students_frame.grid_remove()
 
-        tk.Label(add_student_window, text="Payment Status:").grid(row=4, column=0, padx=5, pady=5)
-        payment_status_entry = tk.Entry(add_student_window)
-        payment_status_entry.grid(row=4, column=1, padx=5, pady=5)
+        self.delete_student_frame = tk.Frame(self.window)
+        self.delete_student_frame.grid(row=1, column=0, columnspan=4, pady=10)
+        self.delete_student_frame.grid_remove()
+
+    def show_add_student_form(self):
+        self.hide_all_forms()
+        self.add_student_frame.grid()
+        # Create labels and entry fields for the add student form within the frame
+        tk.Label(self.add_student_frame, text="Name:").grid(row=0, column=0, padx=5, pady=5)
+        self.name_entry = tk.Entry(self.add_student_frame)
+        self.name_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        tk.Label(self.add_student_frame, text="Address:").grid(row=1, column=0, padx=5, pady=5)
+        self.address_entry = tk.Entry(self.add_student_frame)
+        self.address_entry.grid(row=1, column=1, padx=5, pady=5)
+
+        tk.Label(self.add_student_frame, text="Phone:").grid(row=2, column=0, padx=5, pady=5)
+        self.phone_entry = tk.Entry(self.add_student_frame)
+        self.phone_entry.grid(row=2, column=1, padx=5, pady=5)
+
+        # Progress combobox
+        tk.Label(self.add_student_frame, text="Progress:").grid(row=3, column=0, padx=5, pady=5)
+        self.progress_var = tk.StringVar()
+        progress_combobox = ttk.Combobox(self.add_student_frame, textvariable=self.progress_var)
+        progress_combobox['values'] = tuple(f"Level {i}" for i in range(1, 11))
+        progress_combobox.grid(row=3, column=1, padx=5, pady=5)
+
+        # Payment status combobox
+        tk.Label(self.add_student_frame, text="Payment Status:").grid(row=4, column=0, padx=5, pady=5)
+        self.payment_status_var = tk.StringVar()
+        payment_status_combobox = ttk.Combobox(self.add_student_frame, textvariable=self.payment_status_var)
+        payment_status_combobox['values'] = ("Paid", "Unpaid")
+        payment_status_combobox.grid(row=4, column=1, padx=5, pady=5)
 
         # Function to handle the submit button click
         def submit_data():
-            name = name_entry.get()
-            address = address_entry.get()
-            phone = phone_entry.get()
-            progress = progress_entry.get()
-            payment_status = payment_status_entry.get()
+            name = self.name_entry.get()
+            address = self.address_entry.get()
+            phone = self.phone_entry.get()
+            progress = self.progress_var.get()
+            payment_status = self.payment_status_var.get()
 
             conn = sqlite3.connect("driving_school.db")
             c = conn.cursor()
-            c.execute("INSERT INTO students (name, address, phone, progress, payment_status) VALUES (?, ?, ?, ?, ?)",
-                      (name, address, phone, progress, payment_status))
-            conn.commit()
-            conn.close()
-            messagebox.showinfo("Success", "Student added successfully!")
-            add_student_window.destroy()  # Close the form window
+            try:
+                c.execute("INSERT INTO students (name, address, phone, progress, payment_status) VALUES (?, ?, ?, ?, ?)",
+                          (name, address, phone, progress, payment_status))
+                conn.commit()
+                messagebox.showinfo("Success", "Student added successfully!")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to add student: {e}")
+            finally:
+                conn.close()
+                self.clear_add_student_form()
 
         # Create a submit button
-        submit_button = tk.Button(add_student_window, text="Submit", command=submit_data)
+        submit_button = tk.Button(self.add_student_frame, text="Submit", command=submit_data)
         submit_button.grid(row=5, column=0, columnspan=2, pady=10)
-    
+
+    def clear_add_student_form(self):
+        self.name_entry.delete(0, tk.END)
+        self.address_entry.delete(0, tk.END)
+        self.phone_entry.delete(0, tk.END)
+        self.progress_var.set("")
+        self.payment_status_var.set("")
+
+    def show_update_student_form(self):
+        self.hide_all_forms()
+        self.update_student_frame.grid()
+
+        student_id = simpledialog.askinteger("Input", "Enter student ID to update:")
+        if student_id is not None:
+            # Fetch existing student data
+            conn = sqlite3.connect("driving_school.db")
+            c = conn.cursor()
+            c.execute("SELECT * FROM students WHERE id=?", (student_id,))
+            student_data = c.fetchone()
+            conn.close()
+
+            if student_data:
+                # Create labels and entry fields for the update student form within the frame
+                tk.Label(self.update_student_frame, text="Address:").grid(row=0, column=0, padx=5, pady=5)
+                self.address_entry = tk.Entry(self.update_student_frame)
+                self.address_entry.grid(row=0, column=1, padx=5, pady=5)
+                self.address_entry.insert(0, student_data[2])
+
+                tk.Label(self.update_student_frame, text="Phone:").grid(row=1, column=0, padx=5, pady=5)
+                self.phone_entry = tk.Entry(self.update_student_frame)
+                self.phone_entry.grid(row=1, column=1, padx=5, pady=5)
+                self.phone_entry.insert(0, student_data[3])
+
+                # Progress combobox
+                tk.Label(self.update_student_frame, text="Progress:").grid(row=2, column=0, padx=5, pady=5)
+                self.progress_var = tk.StringVar(value=student_data[4])
+                progress_combobox = ttk.Combobox(self.update_student_frame, textvariable=self.progress_var)
+                progress_combobox['values'] = tuple(f"Level {i}" for i in range(1, 11))
+                progress_combobox.grid(row=2, column=1, padx=5, pady=5)
+
+                # Payment status combobox
+                tk.Label(self.update_student_frame, text="Payment Status:").grid(row=3, column=0, padx=5, pady=5)
+                self.payment_status_var = tk.StringVar(value=student_data[5])
+                payment_status_combobox = ttk.Combobox(self.update_student_frame, textvariable=self.payment_status_var)
+                payment_status_combobox['values'] = ("Paid", "Unpaid")
+                payment_status_combobox.grid(row=3, column=1, padx=5, pady=5)
+
+                # Function to handle update submission
+                def submit_update():
+                    address = self.address_entry.get()
+                    phone = self.phone_entry.get()
+                    progress = self.progress_var.get()
+                    payment_status = self.payment_status_var.get()
+                    
+                    conn = sqlite3.connect("driving_school.db")
+                    c = conn.cursor()
+                    try:
+                        c.execute("""UPDATE students SET address=?, phone=?, progress=?, payment_status=? WHERE id=?""",
+                                  (address, phone, progress, payment_status, student_id))
+                        conn.commit()
+                        messagebox.showinfo("Success", "Student updated successfully!")
+                    except Exception as e:
+                        messagebox.showerror("Error", f"Failed to update student: {e}")
+                    finally:
+                        conn.close()
+
+                # Create a submit button for update
+                submit_button = tk.Button(self.update_student_frame, text="Submit Update", command=submit_update)
+                submit_button.grid(row=4, column=0, columnspan=2, pady=10)
+
+            else:
+                messagebox.showerror("Error", "Student not found.")
+
+    def hide_all_forms(self):
+        self.add_student_frame.grid_remove()
+        self.update_student_frame.grid_remove()
+        self.view_students_frame.grid_remove()
+        self.delete_student_frame.grid_remove()
+
     def view_students(self):
+        self.hide_all_forms()
+        self.view_students_frame.grid()
+
         conn = sqlite3.connect("driving_school.db")
         c = conn.cursor()
         c.execute("SELECT * FROM students")
         students = c.fetchall()
         conn.close()
-        
-        student_list_window = tk.Toplevel(self.window)
-        student_list_window.title("Students List")
-        
-        for student in students:
-            tk.Label(student_list_window, text=f"ID: {student[0]}, Name: {student[1]}, Progress: {student[4]}").pack(pady=5)
+
+        # Create labels to display student details within the frame
+        for i, student in enumerate(students):
+            student_details = f"""
+            ID: {student[0]}
+            Name: {student[1]}
+            Address: {student[2]}
+            Phone: {student[3]}
+            Progress: {student[4]}
+            Payment Status: {student[5]}
+            """
+            tk.Label(self.view_students_frame, text=student_details, justify="left").grid(row=i, column=0, sticky="w")
 
     def delete_student(self):
-        student_id = simpledialog.askinteger("Input", "Enter student ID to delete:")
-        if student_id is not None:
-            conn = sqlite3.connect("driving_school.db")
-            c = conn.cursor()
-            c.execute("DELETE FROM students WHERE id=?", (student_id,))
-            conn.commit()
-            conn.close()
-            messagebox.showinfo("Success", "Student deleted successfully!")
+        self.hide_all_forms()
+        self.delete_student_frame.grid()
 
+        # Create input field for student ID
+        tk.Label(self.delete_student_frame, text="Enter Student ID to delete:").grid(row=0, column=0, padx=5, pady=5)
+        self.student_id_entry = tk.Entry(self.delete_student_frame)
+        self.student_id_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        # Create button to confirm deletion
+        delete_button = tk.Button(self.delete_student_frame, text="Delete Student", command=self.confirm_delete)
+        delete_button.grid(row=1, column=0, columnspan=2, pady=5)
+
+    def confirm_delete(self):
+        student_id = self.student_id_entry.get()
+        if student_id:
+            confirm = messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete student with ID {student_id}?")
+            if confirm:
+                conn = sqlite3.connect("driving_school.db")
+                c = conn.cursor()
+                try:
+                    c.execute("DELETE FROM students WHERE id=?", (student_id,))
+                    conn.commit()
+                    messagebox.showinfo("Success", "Student deleted successfully!") 
+
+                except Exception as e:
+                    messagebox.showerror("Error", f"Failed to delete student: {e}")
+                finally:
+                    conn.close()
+                    self.student_id_entry.delete(0, tk.END)
 # Instructor Management Window
 class InstructorManagement:
     def __init__(self, parent_frame):
         self.window = parent_frame
 
+        # Buttons in a single row (column-wise)
         self.add_instructor_button = tk.Button(self.window, text="Add Instructor", command=self.add_instructor)
-        self.add_instructor_button.pack(pady=10)
-        
+        self.add_instructor_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+
         self.view_instructors_button = tk.Button(self.window, text="View Instructors", command=self.view_instructors)
-        self.view_instructors_button.pack(pady=10)
-    
+        self.view_instructors_button.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+
         self.delete_instructor_button = tk.Button(self.window, text="Delete Instructor", command=self.delete_instructor)
-        self.delete_instructor_button.pack(pady=10)
+        self.delete_instructor_button.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+
+        # Configure column weights for even distribution
+        for i in range(3):  # 3 columns in InstructorManagement
+            self.window.columnconfigure(i, weight=1)
 
     def add_instructor(self):
         # Create a new window for the form
@@ -243,14 +388,19 @@ class LessonManagement:
     def __init__(self, parent_frame):
         self.window = parent_frame
 
+        # Buttons in a single row (column-wise)
         self.book_lesson_button = tk.Button(self.window, text="Book Lesson", command=self.book_lesson)
-        self.book_lesson_button.pack(pady=10)
+        self.book_lesson_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
 
         self.view_lessons_button = tk.Button(self.window, text="View Lessons", command=self.view_lessons)
-        self.view_lessons_button.pack(pady=10)
+        self.view_lessons_button.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
         self.delete_lesson_button = tk.Button(self.window, text="Delete Lesson", command=self.delete_lesson)
-        self.delete_lesson_button.pack(pady=10)
+        self.delete_lesson_button.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+
+        # Configure column weights for even distribution
+        for i in range(3):  # 3 columns in LessonManagement
+            self.window.columnconfigure(i, weight=1)
     
     def book_lesson(self):
         # Create a new window for the form
@@ -329,34 +479,45 @@ class LessonManagement:
             conn.close()
             messagebox.showinfo("Success", "Lesson deleted successfully!")
 
-
 # Reporting Window
 class Reporting:
-    def __init__(self, parent_frame):  # Accept parent_frame as argument
-        self.window = parent_frame  # Set self.window to parent_frame
+    def __init__(self, parent_frame):
+        self.window = parent_frame
 
-        self.generate_report_button = tk.Button(self.window, text="Generate Report", command=self.generate_report)
-        self.generate_report_button.pack(pady=10)
+        # Buttons
+        self.generate_report_button = tk.Button(self.window, text="Generate Report", command=self.show_report)
+        self.generate_report_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
 
-        self.student_progress_button = tk.Button(self.window, text="Student Progress", command=self.show_student_progress)
-        self.student_progress_button.pack(pady=10)
+        self.student_progress_button = tk.Button(self.window, text="Student Progress", command=self.show_student_progress_form)
+        self.student_progress_button.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
-    def generate_report(self):
+        # Configure column weights
+        for i in range(2):
+            self.window.columnconfigure(i, weight=1)
+
+        # Frame for report (initially hidden)
+        self.report_frame = tk.Frame(self.window)
+        self.report_frame.grid(row=1, column=0, columnspan=2, pady=10)
+        self.report_frame.grid_remove()
+
+        # Frame for student progress (initially hidden)
+        self.student_progress_frame = tk.Frame(self.window)
+        self.student_progress_frame.grid(row=1, column=0, columnspan=2, pady=10)
+        self.student_progress_frame.grid_remove()
+
+    def show_report(self):
+        self.hide_all_forms()  # Hide other forms
+        self.report_frame.grid()  # Show the report frame
+
+        # Generate the report content
         conn = sqlite3.connect("driving_school.db")
         c = conn.cursor()
-
-        # Get total lessons booked
         c.execute("SELECT COUNT(*) FROM lessons WHERE status = 'Booked'")
         lessons_count = c.fetchone()[0]
-
-        # Get total students
         c.execute("SELECT COUNT(*) FROM students")
         students_count = c.fetchone()[0]
-
-        # Get total instructors
         c.execute("SELECT COUNT(*) FROM instructors")
         instructors_count = c.fetchone()[0]
-
         conn.close()
 
         report_text = f"""
@@ -364,11 +525,26 @@ class Reporting:
         Total students: {students_count}
         Total instructors: {instructors_count}
         """
-        messagebox.showinfo("Report", report_text)
 
-    def show_student_progress(self):
-        student_id = simpledialog.askinteger("Input", "Enter student ID:")
-        if student_id is not None:
+        # Display the report in a label within the frame
+        tk.Label(self.report_frame, text=report_text, justify="left").pack()
+
+    def show_student_progress_form(self):
+        self.hide_all_forms()  # Hide other forms
+        self.student_progress_frame.grid()  # Show the student progress form
+
+        # Create input field for student ID
+        tk.Label(self.student_progress_frame, text="Enter Student ID:").grid(row=0, column=0, padx=5, pady=5)
+        self.student_id_entry = tk.Entry(self.student_progress_frame)
+        self.student_id_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        # Create button to calculate progress
+        calculate_button = tk.Button(self.student_progress_frame, text="Calculate Progress", command=self.calculate_progress)
+        calculate_button.grid(row=1, column=0, columnspan=2, pady=5)
+
+    def calculate_progress(self):
+        student_id = self.student_id_entry.get()
+        if student_id:
             conn = sqlite3.connect("driving_school.db")
             c = conn.cursor()
             c.execute("SELECT lesson_type FROM lessons WHERE student_id=?", (student_id,))
@@ -377,11 +553,20 @@ class Reporting:
 
             total_progress = 0
             for lesson in lessons:
-                lesson_level = int(lesson[0].split(" ")[1])  # Extract level from "Level X"
-                total_progress += lesson_level * 10  # Calculate progress based on level
+                try:
+                    lesson_level = int(lesson[0].split(" ")[1])
+                    total_progress += lesson_level * 10
+                except (ValueError, IndexError):
+                    messagebox.showerror("Error", "Invalid lesson type format in database.")
+                    return
 
-            messagebox.showinfo("Student Progress", f"Student ID: {student_id}\nProgress: {total_progress}%")
+            # Display the progress in a label within the frame
+            result_label = tk.Label(self.student_progress_frame, text=f"Student ID: {student_id}\nProgress: {total_progress}%", justify="left")
+            result_label.grid(row=2, column=0, columnspan=2, pady=5)
 
+    def hide_all_forms(self):
+        self.report_frame.grid_remove()
+        self.student_progress_frame.grid_remove()
 
 
 # Main Program
