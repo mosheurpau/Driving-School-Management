@@ -50,9 +50,9 @@ class Application:
     def __init__(self, root):
         self.root = root
         self.root.title("Pass IT Driving School Management")
-        self.root.geometry("800x400") 
+        self.root.geometry("1000x600") 
         # Set minimum width and height
-        root.minsize(600, 300) 
+        root.minsize(1200, 600) 
 
         # Use grid layout for responsiveness
         self.root.columnconfigure(0, weight=1)
@@ -76,20 +76,38 @@ class Application:
        
 
     def create_widgets(self):
-        # Buttons for different management systems
-        self.main_frame = tk.Frame(self.root)
-        self.main_frame.grid(row=0, column=0, sticky="ns")
-        tk.Button(self.main_frame, text="Student Management", width=20, 
-                 command=lambda: self.open_management_window(StudentManagement)).grid(row=0, column=0, pady=5)
-        tk.Button(self.main_frame, text="Instructor Management", width=20, 
-                 command=lambda: self.open_management_window(InstructorManagement)).grid(row=1, column=0, pady=5)
-        tk.Button(self.main_frame, text="Lesson Management", width=20, 
-                 command=lambda: self.open_management_window(LessonManagement)).grid(row=2, column=0, pady=5)
-        tk.Button(self.main_frame, text="Reporting", width=20, 
-                 command=lambda: self.open_management_window(Reporting)).grid(row=3, column=0, pady=5)
+    # Buttons for different management systems
+
+        self.main_frame = tk.Frame(self.root, bg="#00A300")  # Green background for left frame
+        self.main_frame.grid(row=0, column=0, sticky="nsew")  # Make it fill the space
+
+        # Configure rows and columns for button centering
+        self.main_frame.rowconfigure(0, weight=1)  # Empty row above
+        self.main_frame.rowconfigure(5, weight=1)  # Empty row below
+        self.main_frame.columnconfigure(0, weight=1)
+
+        # Create button style
+        button_style = ttk.Style()
+        button_style.configure('My.TButton', 
+                            font=('Arial', 14,'bold'), 
+                            foreground='#007500',  # White text
+                            background='#023D54',  # Blue background
+                            padding=20, 
+                            relief="flat")
+
+        # Create buttons with styling (using ttk.Button)
+        ttk.Button(self.main_frame, text="Student Management", style='My.TButton',
+              command=lambda: self.open_management_window(StudentManagement)).grid(row=1, column=0, pady=5, padx=20, sticky="ew")
+        ttk.Button(self.main_frame, text="Instructor Management", style='My.TButton',
+              command=lambda: self.open_management_window(InstructorManagement)).grid(row=2, column=0, pady=5, padx=20, sticky="ew")
+        ttk.Button(self.main_frame, text="Lesson Management", style='My.TButton',
+              command=lambda: self.open_management_window(LessonManagement)).grid(row=3, column=0, pady=5, padx=20, sticky="ew")
+        ttk.Button(self.main_frame, text="Reporting", style='My.TButton',
+              command=lambda: self.open_management_window(Reporting)).grid(row=4, column=0, pady=5, padx=20, sticky="ew")
+               
 
         # Right frame for content
-        self.right_frame = tk.Frame(self.root)
+        self.right_frame = tk.Frame(self.root, bg="#007500")  # Light blue background for right frame
         self.right_frame.grid(row=0, column=1, sticky="nsew")
 
     def open_management_window(self, window_class):
@@ -105,18 +123,36 @@ class StudentManagement:
     def __init__(self, parent_frame):
         self.window = parent_frame
 
-        # Buttons
-        self.add_student_button = tk.Button(self.window, text="Add Student", command=self.show_add_student_form)
-        self.add_student_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+        # Create button style
+        button_style = ttk.Style()
+        button_style.configure('Student.TButton', 
+                            font=('Arial', 10, 'bold'),  # Bold font
+                            foreground='#007500',        # White text color
+                            background='#2874A6',      # Blue background color
+                            padding=10,                # Padding
+                            relief="flat")             # Flat relief
 
-        self.view_students_button = tk.Button(self.window, text="View Students", command=self.view_students)
-        self.view_students_button.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        # Hover effect (change background color on hover)
+        button_style.map('Student.TButton',
+            background=[('active', '#3498DB'),  # Lighter blue on click
+                        ('!disabled', '#21618C')])  # Darker blue on hover
 
-        self.update_student_button = tk.Button(self.window, text="Update Student", command=self.show_update_student_form)
-        self.update_student_button.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+        # Buttons (using ttk.Button with styling)
+        self.add_student_button = ttk.Button(self.window, text="Add Student", style='Student.TButton',
+                                            command=self.show_add_student_form)
+        self.add_student_button.grid(row=0, column=0, padx=10, pady=10, sticky="ew")  # Added margin
 
-        self.delete_student_button = tk.Button(self.window, text="Delete Student", command=self.delete_student)
-        self.delete_student_button.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
+        self.view_students_button = ttk.Button(self.window, text="View Students", style='Student.TButton', 
+                                            command=self.view_students)
+        self.view_students_button.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
+
+        self.update_student_button = ttk.Button(self.window, text="Update Student", style='Student.TButton',
+                                                command=self.show_update_student_form)
+        self.update_student_button.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
+
+        self.delete_student_button = ttk.Button(self.window, text="Delete Student", style='Student.TButton',
+                                                command=self.delete_student)
+        self.delete_student_button.grid(row=0, column=3, padx=10, pady=10, sticky="ew")
 
         # Configure column weights
         for i in range(4):
@@ -347,18 +383,37 @@ class StudentManagement:
                     self.student_id_entry.delete(0, tk.END)
 # Instructor Management Window
 class InstructorManagement:
+
+
     def __init__(self, parent_frame):
         self.window = parent_frame
 
-        # Buttons
-        self.add_instructor_button = tk.Button(self.window, text="Add Instructor", command=self.show_add_instructor_form)
-        self.add_instructor_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+        # Create button style
+        button_style = ttk.Style()
+        button_style.configure('Instructor.TButton', 
+                            font=('Arial', 10, 'bold'),  # Bold font
+                            foreground='#00A300',        # White text color
+                            background='#2874A6',      # Blue background color
+                            padding=10,                # Padding
+                            relief="flat")             # Flat relief
 
-        self.view_instructors_button = tk.Button(self.window, text="View Instructors", command=self.view_instructors)
-        self.view_instructors_button.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        # Hover effect (change background color on hover)
+        button_style.map('Instructor.TButton',
+            background=[('active', '#3498DB'),  # Lighter blue on click
+                        ('!disabled', '#21618C')])  # Darker blue on hover
 
-        self.delete_instructor_button = tk.Button(self.window, text="Delete Instructor", command=self.delete_instructor)
-        self.delete_instructor_button.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+        # Buttons (using ttk.Button with styling)
+        self.add_instructor_button = ttk.Button(self.window, text="Add Instructor", style='Instructor.TButton',
+                                            command=self.show_add_instructor_form)
+        self.add_instructor_button.grid(row=0, column=0, padx=10, pady=10, sticky="ew")  # Added margin
+
+        self.view_instructors_button = ttk.Button(self.window, text="View Instructors", style='Instructor.TButton', 
+                                                command=self.view_instructors)
+        self.view_instructors_button.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
+
+        self.delete_instructor_button = ttk.Button(self.window, text="Delete Instructor", style='Instructor.TButton',
+                                                command=self.delete_instructor)
+        self.delete_instructor_button.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
 
         # Configure column weights
         for i in range(3):
@@ -504,15 +559,33 @@ class LessonManagement:
     def __init__(self, parent_frame):
         self.window = parent_frame
 
-        # Buttons
-        self.book_lesson_button = tk.Button(self.window, text="Book Lesson", command=self.show_book_lesson_form)
-        self.book_lesson_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+        # Create button style
+        button_style = ttk.Style()
+        button_style.configure('Lesson.TButton', 
+                            font=('Arial', 10, 'bold'),  # Bold font
+                            foreground='#00A300',        # White text color
+                            background='#2874A6',      # Blue background color
+                            padding=10,                # Padding
+                            relief="flat")             # Flat relief
 
-        self.view_lessons_button = tk.Button(self.window, text="View Lessons", command=self.view_lessons)
-        self.view_lessons_button.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        # Hover effect (change background color on hover)
+        button_style.map('Lesson.TButton',
+            background=[('active', '#3498DB'),  # Lighter blue on click
+                        ('!disabled', '#21618C')])  # Darker blue on hover
 
-        self.delete_lesson_button = tk.Button(self.window, text="Delete Lesson", command=self.delete_lesson)
-        self.delete_lesson_button.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+        # Buttons (using ttk.Button with styling)
+        self.book_lesson_button = ttk.Button(self.window, text="Book Lesson", style='Lesson.TButton',
+                                            command=self.show_book_lesson_form)
+        self.book_lesson_button.grid(row=0, column=0, padx=10, pady=10, sticky="ew")  # Added margin
+
+        self.view_lessons_button = ttk.Button(self.window, text="View Lessons", style='Lesson.TButton', 
+                                            command=self.view_lessons)
+        self.view_lessons_button.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
+
+        self.delete_lesson_button = ttk.Button(self.window, text="Delete Lesson", style='Lesson.TButton',
+                                                command=self.delete_lesson)
+        self.delete_lesson_button.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
+
 
         # Configure column weights (3 columns now)
         for i in range(3):  
@@ -667,12 +740,28 @@ class Reporting:
     def __init__(self, parent_frame):
         self.window = parent_frame
 
-        # Buttons
-        self.generate_report_button = tk.Button(self.window, text="Generate Report", command=self.show_report)
-        self.generate_report_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+        # Create button style
+        button_style = ttk.Style()
+        button_style.configure('Report.TButton', 
+                            font=('Arial', 10, 'bold'),  # Bold font
+                            foreground='#00A300',        # White text color
+                            background='#2874A6',      # Blue background color
+                            padding=10,                # Padding
+                            relief="flat")             # Flat relief
 
-        self.student_progress_button = tk.Button(self.window, text="Student Progress", command=self.show_student_progress_form)
-        self.student_progress_button.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        # Hover effect (change background color on hover)
+        button_style.map('Report.TButton',
+            background=[('active', '#3498DB'),  # Lighter blue on click
+                        ('!disabled', '#21618C')])  # Darker blue on hover
+
+        # Buttons (using ttk.Button with styling)
+        self.generate_report_button = ttk.Button(self.window, text="Generate Report", style='Report.TButton',
+                                                command=self.show_report)
+        self.generate_report_button.grid(row=0, column=0, padx=10, pady=10, sticky="ew")  # Added margin
+
+        self.student_progress_button = ttk.Button(self.window, text="Student Progress", style='Report.TButton',
+                                                command=self.show_student_progress_form)
+        self.student_progress_button.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
 
         # Configure column weights
         for i in range(2):
