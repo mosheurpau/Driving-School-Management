@@ -241,66 +241,110 @@ class StudentManagement:
         self.hide_all_forms()
         self.update_student_frame.grid()
 
-        student_id = simpledialog.askinteger("Input", "Enter student ID to update:")
-        if student_id is not None:
-            # Fetch existing student data
-            conn = sqlite3.connect("driving_school.db")
-            c = conn.cursor()
-            c.execute("SELECT * FROM students WHERE id=?", (student_id,))
-            student_data = c.fetchone()
+        # --- Search Functionality ---
+        tk.Label(self.update_student_frame, text="Search by Name:").grid(row=0, column=0, padx=5, pady=5)
+        self.search_entry = tk.Entry(self.update_student_frame)
+        self.search_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        search_button = tk.Button(self.update_student_frame, text="Search", command=self.search_student)
+        search_button.grid(row=0, column=2, padx=5, pady=5)
+
+        # Listbox to display search results
+        self.search_results = tk.Listbox(self.update_student_frame)
+        self.search_results.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+        self.search_results.bind("<<ListboxSelect>>", self.show_update_form) 
+        # --- End of Search Functionality ---
+
+    def search_student(self):
+        search_term = self.search_entry.get()
+        if not search_term:
+            messagebox.showwarning("Warning", "Please enter a search term.")
+            return
+
+        conn = sqlite3.connect("driving_school.db")
+        c = conn.cursor()
+        try:
+            c.execute("SELECT id, name FROM students WHERE name LIKE ?", ('%' + search_term + '%',))
+            student_data = c.fetchall()
+            self.search_results.delete(0, tk.END) 
+            if student_data:
+                for student in student_data:
+                    self.search_results.insert(tk.END, f"{student[0]} - {student[1]}") 
+            else:
+                messagebox.showinfo("Info", "No student found with that name.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error searching student: {e}")
+        finally:
             conn.close()
 
-            if student_data:
-                # Create labels and entry fields for the update student form within the frame
-                tk.Label(self.update_student_frame, text="Address:").grid(row=0, column=0, padx=5, pady=5)
-                self.address_entry = tk.Entry(self.update_student_frame)
-                self.address_entry.grid(row=0, column=1, padx=5, pady=5)
-                self.address_entry.insert(0, student_data[2])
+    def show_update_form(self, event):
+        selection = self.search_results.curselection()
+        if selection:
+            selected_index = selection[0]
+            selected_student = self.search_results.get(selected_index)
+            student_id = selected_student.split(" - ")[0] 
 
-                tk.Label(self.update_student_frame, text="Phone:").grid(row=1, column=0, padx=5, pady=5)
-                self.phone_entry = tk.Entry(self.update_student_frame)
-                self.phone_entry.grid(row=1, column=1, padx=5, pady=5)
-                self.phone_entry.insert(0, student_data[3])
+            # Fetch the student data based on student_id
+            conn = sqlite3.connect("driving_school.db")
+            c = conn.cursor()
+            try:
+                c.execute("SELECT * FROM students WHERE id=?", (student_id,))
+                student_data = c.fetchone()
+                
+                if student_data:
+                    # Create update form elements dynamically
+                    tk.Label(self.update_student_frame, text="Address:").grid(row=2, column=0, padx=5, pady=5)
+                    self.address_entry = tk.Entry(self.update_student_frame)
+                    self.address_entry.grid(row=2, column=1, padx=5, pady=5)
+                    self.address_entry.insert(0, student_data[2])
 
-                # Progress combobox
-                tk.Label(self.update_student_frame, text="Progress:").grid(row=2, column=0, padx=5, pady=5)
-                self.progress_var = tk.StringVar(value=student_data[4])
-                progress_combobox = ttk.Combobox(self.update_student_frame, textvariable=self.progress_var)
-                progress_combobox['values'] = tuple(f"Level {i}" for i in range(1, 11))
-                progress_combobox.grid(row=2, column=1, padx=5, pady=5)
+                    tk.Label(self.update_student_frame, text="Phone:").grid(row=3, column=0, padx=5, pady=5)
+                    self.phone_entry = tk.Entry(self.update_student_frame)
+                    self.phone_entry.grid(row=3, column=1, padx=5, pady=5)
+                    self.phone_entry.insert(0, student_data[3])
 
-                # Payment status combobox
-                tk.Label(self.update_student_frame, text="Payment Status:").grid(row=3, column=0, padx=5, pady=5)
-                self.payment_status_var = tk.StringVar(value=student_data[5])
-                payment_status_combobox = ttk.Combobox(self.update_student_frame, textvariable=self.payment_status_var)
-                payment_status_combobox['values'] = ("Paid", "Unpaid")
-                payment_status_combobox.grid(row=3, column=1, padx=5, pady=5)
+                     # Progress Combobox
+                    tk.Label(self.update_student_frame, text="Progress:").grid(row=4, column=0, padx=5, pady=5)
+                    self.progress_var = tk.StringVar(value=student_data[4])  # Set initial value
+                    progress_combobox = ttk.Combobox(self.update_student_frame, textvariable=self.progress_var)
+                    progress_combobox['values'] = tuple(f"Level {i}" for i in range(1, 11))
+                    progress_combobox.grid(row=4, column=1, padx=5, pady=5)
 
-                # Function to handle update submission
-                def submit_update():
-                    address = self.address_entry.get()
-                    phone = self.phone_entry.get()
-                    progress = self.progress_var.get()
-                    payment_status = self.payment_status_var.get()
-                    
-                    conn = sqlite3.connect("driving_school.db")
-                    c = conn.cursor()
-                    try:
-                        c.execute("""UPDATE students SET address=?, phone=?, progress=?, payment_status=? WHERE id=?""",
-                                  (address, phone, progress, payment_status, student_id))
-                        conn.commit()
-                        messagebox.showinfo("Success", "Student updated successfully!")
-                    except Exception as e:
-                        messagebox.showerror("Error", f"Failed to update student: {e}")
-                    finally:
-                        conn.close()
+                    # Payment Status Combobox
+                    tk.Label(self.update_student_frame, text="Payment Status:").grid(row=5, column=0, padx=5, pady=5)
+                    self.payment_status_var = tk.StringVar(value=student_data[5])  # Set initial value
+                    payment_status_combobox = ttk.Combobox(self.update_student_frame, textvariable=self.payment_status_var)
+                    payment_status_combobox['values'] = ("Paid", "Unpaid")
+                    payment_status_combobox.grid(row=5, column=1, padx=5, pady=5)
 
-                # Create a submit button for update
-                submit_button = tk.Button(self.update_student_frame, text="Submit Update", command=submit_update)
-                submit_button.grid(row=4, column=0, columnspan=2, pady=10)
+                    # Create an update button
+                    update_button = tk.Button(self.update_student_frame, text="Update", command=lambda: self.update_student(student_id))
+                    update_button.grid(row=6, column=0, columnspan=2, pady=10) 
 
-            else:
-                messagebox.showerror("Error", "Student not found.")
+            except Exception as e:
+                messagebox.showerror("Error", f"Error fetching student data: {e}")
+            finally:
+                conn.close()
+
+    def update_student(self, student_id):
+        # Get the updated values from the input fields
+        address = self.address_entry.get()
+        phone = self.phone_entry.get()
+        progress = self.progress_var.get()  # Get progress value
+        payment_status = self.payment_status_var.get()  # Get payment status value
+
+        # Update the student data in the database
+        conn = sqlite3.connect("driving_school.db")
+        c = conn.cursor()
+        try:
+            c.execute("""UPDATE students SET address=?, phone=?, progress=?, payment_status=? WHERE id=?""",
+                      (address, phone, progress, payment_status, student_id))
+            conn.commit()
+            messagebox.showinfo("Success", "Student updated successfully!")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to update student: {e}")
+        finally:
+            conn.close()
 
     def hide_all_forms(self):
         self.add_student_frame.grid_remove()
