@@ -213,11 +213,17 @@ class StudentManagement:
             progress = self.progress_var.get()
             payment_status = self.payment_status_var.get()
 
+            # --- Input Validation ---
+            if not all([name, address, phone, progress, payment_status]):
+                messagebox.showwarning("Warning", "All fields are required.")
+                return
+            # --- End of Input Validation ---
+
             conn = sqlite3.connect("driving_school.db")
             c = conn.cursor()
             try:
                 c.execute("INSERT INTO students (name, address, phone, progress, payment_status) VALUES (?, ?, ?, ?, ?)",
-                          (name, address, phone, progress, payment_status))
+                        (name, address, phone, progress, payment_status))
                 conn.commit()
                 messagebox.showinfo("Success", "Student added successfully!")
             except Exception as e:
@@ -226,9 +232,17 @@ class StudentManagement:
                 conn.close()
                 self.clear_add_student_form()
 
-        # Create a submit button
-        submit_button = tk.Button(self.add_student_frame, text="Submit", command=submit_data)
-        submit_button.grid(row=5, column=0, columnspan=2, pady=10)
+        # Create a submit button with styling (using ttk.Button)
+        submit_button_style = ttk.Style()
+        submit_button_style.configure('Submit.TButton',
+                                    font=('Arial', 10, 'bold'),
+                                    foreground="#00A300",
+                                    background='#2874A6',
+                                    padding=2,
+                                    relief="flat")
+
+        submit_button = ttk.Button(self.add_student_frame, text="Submit", style='Submit.TButton', command=submit_data)
+        submit_button.grid(row=5, column=0, columnspan=2, pady=10, sticky="ew")  
 
     def clear_add_student_form(self):
         self.name_entry.delete(0, tk.END)
@@ -355,7 +369,6 @@ class StudentManagement:
     def view_students(self):
         self.hide_all_forms()
         self.view_students_frame.grid()
-
         conn = sqlite3.connect("driving_school.db")
         c = conn.cursor()
         c.execute("SELECT * FROM students")
@@ -399,32 +412,66 @@ class StudentManagement:
         self.hide_all_forms()
         self.delete_student_frame.grid()
 
-        # Create input field for student ID
-        tk.Label(self.delete_student_frame, text="Enter Student ID to delete:").grid(row=0, column=0, padx=5, pady=5)
-        self.student_id_entry = tk.Entry(self.delete_student_frame)
-        self.student_id_entry.grid(row=0, column=1, padx=5, pady=5)
+        # --- Search Functionality ---
+        tk.Label(self.delete_student_frame, text="Search by Name:").grid(row=0, column=0, padx=5, pady=5)
+        self.search_entry = tk.Entry(self.delete_student_frame)
+        self.search_entry.grid(row=0, column=1, padx=5, pady=5)
 
-        # Create button to confirm deletion
-        delete_button = tk.Button(self.delete_student_frame, text="Delete Student", command=self.confirm_delete)
-        delete_button.grid(row=1, column=0, columnspan=2, pady=5)
+        search_button = tk.Button(self.delete_student_frame, text="Search", command=self.search_student_for_deletion)
+        search_button.grid(row=0, column=2, padx=5, pady=5)
 
-    def confirm_delete(self):
-        student_id = self.student_id_entry.get()
-        if student_id:
+        # Listbox to display search results
+        self.search_results = tk.Listbox(self.delete_student_frame)
+        self.search_results.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+        self.search_results.bind("<<ListboxSelect>>", self.show_delete_confirmation)
+        # --- End of Search Functionality ---
+
+    def search_student_for_deletion(self):
+        search_term = self.search_entry.get()
+        if not search_term:
+            messagebox.showwarning("Warning", "Please enter a search term.")
+            return
+
+        conn = sqlite3.connect("driving_school.db")
+        c = conn.cursor()
+        try:
+            c.execute("SELECT id, name FROM students WHERE name LIKE ?", ('%' + search_term + '%',))
+            student_data = c.fetchall()
+            self.search_results.delete(0, tk.END)  # Clear previous results
+            if student_data:
+                for student in student_data:
+                    self.search_results.insert(tk.END, f"{student[0]} - {student[1]}")  # Display ID and name
+            else:
+                messagebox.showinfo("Info", "No student found with that name.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error searching student: {e}")
+        finally:
+            conn.close()
+
+    def show_delete_confirmation(self, event):
+        selection = self.search_results.curselection()
+        if selection:
+            selected_index = selection[0]
+            selected_student = self.search_results.get(selected_index)
+            student_id = selected_student.split(" - ")[0]  # Extract student ID
+
+            # Show confirmation dialog
             confirm = messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete student with ID {student_id}?")
             if confirm:
-                conn = sqlite3.connect("driving_school.db")
-                c = conn.cursor()
-                try:
-                    c.execute("DELETE FROM students WHERE id=?", (student_id,))
-                    conn.commit()
-                    messagebox.showinfo("Success", "Student deleted successfully!") 
+                self.delete_student_from_db(student_id)
 
-                except Exception as e:
-                    messagebox.showerror("Error", f"Failed to delete student: {e}")
-                finally:
-                    conn.close()
-                    self.student_id_entry.delete(0, tk.END)
+    def delete_student_from_db(self, student_id):
+        conn = sqlite3.connect("driving_school.db")
+        c = conn.cursor()
+        try:
+            c.execute("DELETE FROM students WHERE id=?", (student_id,))
+            conn.commit()
+            messagebox.showinfo("Success", "Student deleted successfully!")
+            self.search_student_for_deletion()  # Refresh the search results
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to delete student: {e}")
+        finally:
+            conn.close()
 # Instructor Management Window
 class InstructorManagement:
 
