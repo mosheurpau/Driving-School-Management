@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk 
 from fpdf import FPDF  # type: ignore # Import FPDF library
 import webbrowser
+from PIL import Image, ImageTk
 
 # Database Setup
 def create_db():
@@ -59,9 +60,9 @@ class Application:
         # Set minimum width and height
         root.minsize(1200, 600) 
 
-        # Use grid layout for responsiveness
-        self.root.columnconfigure(0, weight=1)
-        self.root.columnconfigure(1, weight=3) 
+        # Use grid layout for responsiveness with fixed width for the left frame
+        self.root.columnconfigure(0, weight=0, minsize=200)  # Fixed width for left frame
+        self.root.columnconfigure(1, weight=1)  # Right frame expands
         self.root.rowconfigure(0, weight=1)
 
         self.create_widgets()
@@ -81,7 +82,7 @@ class Application:
        
 
     def create_widgets(self):
-    # Buttons for different management systems
+        # Buttons for different management systems
 
         self.main_frame = tk.Frame(self.root, bg="#00A300")  # Green background for left frame
         self.main_frame.grid(row=0, column=0, sticky="nsew")  # Make it fill the space
@@ -91,29 +92,51 @@ class Application:
         self.main_frame.rowconfigure(5, weight=1)  # Empty row below
         self.main_frame.columnconfigure(0, weight=1)
 
+        # Add logo image
+        try:
+            # Open the image using PIL
+            img = Image.open("logo.png")  # Replace "logo.png" with your image file
+
+            # Resize the image using PIL
+            img = img.resize((400, 400), Image.LANCZOS)
+
+            # Convert back to PhotoImage
+            self.logo_img = ImageTk.PhotoImage(img)  # Assign to self.logo_img
+
+            logo_label = tk.Label(self.main_frame, image=self.logo_img, bg="#00A300")
+            logo_label.grid(row=0, column=0, pady=5, padx=20,)
+        except Exception as e:
+            print(f"Error loading logo image: {e}")
+
         # Create button style
         button_style = ttk.Style()
-        button_style.configure('My.TButton', 
-                            font=('Arial', 14,'bold'), 
+        button_style.configure('My.TButton',
+                            font=('Arial', 14, 'bold'),
                             foreground='#007500',  # White text
                             background='#023D54',  # Blue background
-                            padding=20, 
+                            padding=20,
                             relief="flat")
 
         # Create buttons with styling (using ttk.Button)
         ttk.Button(self.main_frame, text="Student Management", style='My.TButton',
-              command=lambda: self.open_management_window(StudentManagement)).grid(row=1, column=0, pady=5, padx=20, sticky="ew")
+                command=lambda: self.open_management_window(StudentManagement)).grid(row=1, column=0, pady=5, padx=20,
+                                                                                    sticky="ew")
         ttk.Button(self.main_frame, text="Instructor Management", style='My.TButton',
-              command=lambda: self.open_management_window(InstructorManagement)).grid(row=2, column=0, pady=5, padx=20, sticky="ew")
+                command=lambda: self.open_management_window(InstructorManagement)).grid(row=2, column=0, pady=5, padx=20,
+                                                                                        sticky="ew")
         ttk.Button(self.main_frame, text="Lesson Management", style='My.TButton',
-              command=lambda: self.open_management_window(LessonManagement)).grid(row=3, column=0, pady=5, padx=20, sticky="ew")
+                command=lambda: self.open_management_window(LessonManagement)).grid(row=3, column=0, pady=5, padx=20,
+                                                                                    sticky="ew")
         ttk.Button(self.main_frame, text="Reporting", style='My.TButton',
-              command=lambda: self.open_management_window(Reporting)).grid(row=4, column=0, pady=5, padx=20, sticky="ew")
-               
+                command=lambda: self.open_management_window(Reporting)).grid(row=4, column=0, pady=(5, 100), padx=20, sticky="ew")
 
         # Right frame for content
-        self.right_frame = tk.Frame(self.root, bg="#007500")  # Light blue background for right frame
+        self.right_frame = tk.Frame(self.root, bg="#007500")
         self.right_frame.grid(row=0, column=1, sticky="nsew")
+    
+        # Add welcome message to right frame
+        welcome_label = tk.Label(self.right_frame, text="Welcome to IT Driving School!", font=("Arial", 24, "bold"), bg="#007500", fg="white")
+        welcome_label.pack(expand=True, pady=50)  # Center the label with padding
 
     def open_management_window(self, window_class):
         # Clear any existing widgets in the right frame
