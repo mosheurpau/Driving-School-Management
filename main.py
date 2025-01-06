@@ -21,7 +21,8 @@ def create_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT,
                 phone TEXT,
-                email TEXT)''')
+                email TEXT
+                )''')
     
     # Create lessons table
     c.execute('''CREATE TABLE IF NOT EXISTS lessons (
@@ -474,60 +475,66 @@ class StudentManagement:
             conn.close()
 # Instructor Management Window
 class InstructorManagement:
-
-
     def __init__(self, parent_frame):
         self.window = parent_frame
 
         # Create button style
         button_style = ttk.Style()
-        button_style.configure('Instructor.TButton', 
-                            font=('Arial', 10, 'bold'),  # Bold font
-                            foreground='#00A300',        # White text color
-                            background='#2874A6',      # Blue background color
-                            padding=10,                # Padding
-                            relief="flat")             # Flat relief
+        button_style.configure('Instructor.TButton',
+                              font=('Arial', 10, 'bold'),  # Bold font
+                              foreground='#00A300',  # White text color
+                              background='#2874A6',  # Blue background color
+                              padding=10,  # Padding
+                              relief="flat")  # Flat relief
 
         # Hover effect (change background color on hover)
         button_style.map('Instructor.TButton',
-            background=[('active', '#3498DB'),  # Lighter blue on click
-                        ('!disabled', '#21618C')])  # Darker blue on hover
+                        background=[('active', '#3498DB'),  # Lighter blue on click
+                                    ('!disabled', '#21618C')])  # Darker blue on hover
 
         # Buttons (using ttk.Button with styling)
         self.add_instructor_button = ttk.Button(self.window, text="Add Instructor", style='Instructor.TButton',
-                                            command=self.show_add_instructor_form)
-        self.add_instructor_button.grid(row=0, column=0, padx=10, pady=10, sticky="ew")  # Added margin
+                                               command=self.show_add_instructor_form)
+        self.add_instructor_button.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
 
-        self.view_instructors_button = ttk.Button(self.window, text="View Instructors", style='Instructor.TButton', 
-                                                command=self.view_instructors)
+        self.view_instructors_button = ttk.Button(self.window, text="View Instructors", style='Instructor.TButton',
+                                                   command=self.view_instructors)
         self.view_instructors_button.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
 
-        self.delete_instructor_button = ttk.Button(self.window, text="Delete Instructor", style='Instructor.TButton',
-                                                command=self.delete_instructor)
-        self.delete_instructor_button.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
+        self.update_instructor_button = ttk.Button(self.window, text="Update Instructor", style='Instructor.TButton',
+                                                   command=self.show_update_instructor_form)
+        self.update_instructor_button.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
 
-        # Configure column weights
-        for i in range(3):
+        self.delete_instructor_button = ttk.Button(self.window, text="Delete Instructor", style='Instructor.TButton',
+                                                   command=self.delete_instructor)
+        self.delete_instructor_button.grid(row=0, column=3, padx=10, pady=10, sticky="ew")
+
+        # Configure column weights (adjust for the new button)
+        for i in range(4):
             self.window.columnconfigure(i, weight=1)
 
         # Frames for forms (initially hidden)
         self.add_instructor_frame = tk.Frame(self.window)
-        self.add_instructor_frame.grid(row=1, column=0, columnspan=3, pady=10)
+        self.add_instructor_frame.grid(row=1, column=0, columnspan=4, pady=10)
         self.add_instructor_frame.grid_remove()
 
         self.view_instructors_frame = tk.Frame(self.window)
-        self.view_instructors_frame.grid(row=1, column=0, columnspan=3, pady=10)
+        self.view_instructors_frame.grid(row=1, column=0, columnspan=4, pady=10)
         self.view_instructors_frame.grid_remove()
 
+        self.update_instructor_frame = tk.Frame(self.window)
+        self.update_instructor_frame.grid(row=1, column=0, columnspan=4, pady=10)
+        self.update_instructor_frame.grid_remove()
+
         self.delete_instructor_frame = tk.Frame(self.window)
-        self.delete_instructor_frame.grid(row=1, column=0, columnspan=3, pady=10)
+        self.delete_instructor_frame.grid(row=1, column=0, columnspan=4, pady=10)
         self.delete_instructor_frame.grid_remove()
 
     def show_add_instructor_form(self):
         self.hide_all_forms()
         self.add_instructor_frame.grid()
 
-        # Create labels and entry fields for the add instructor form within the frame
+        # Create labels and entry fields for the add instructor form
         tk.Label(self.add_instructor_frame, text="Name:").grid(row=0, column=0, padx=5, pady=5)
         self.name_entry = tk.Entry(self.add_instructor_frame)
         self.name_entry.grid(row=0, column=1, padx=5, pady=5)
@@ -540,17 +547,31 @@ class InstructorManagement:
         self.email_entry = tk.Entry(self.add_instructor_frame)
         self.email_entry.grid(row=2, column=1, padx=5, pady=5)
 
-        # Function to handle the submit button click
+        # Instructor Type dropdown
+        tk.Label(self.add_instructor_frame, text="Instructor Type:").grid(row=3, column=0, padx=5, pady=5)
+        self.instructor_type_var = tk.StringVar(value="Full-time")  # Default value
+        instructor_type_combobox = ttk.Combobox(self.add_instructor_frame, textvariable=self.instructor_type_var)
+        instructor_type_combobox['values'] = ("Full-time", "Part-time")
+        instructor_type_combobox.grid(row=3, column=1, padx=5, pady=5)
+
+            # Function to handle the submit button click
         def submit_data():
             name = self.name_entry.get()
             phone = self.phone_entry.get()
             email = self.email_entry.get()
+            instructor_type = self.instructor_type_var.get()
+
+            # --- Input Validation ---
+            if not all([name, phone, email, instructor_type]):
+                messagebox.showwarning("Warning", "All fields are required.")
+                return
+            # --- End of Input Validation ---
 
             conn = sqlite3.connect("driving_school.db")
             c = conn.cursor()
             try:
-                c.execute("INSERT INTO instructors (name, phone, email) VALUES (?, ?, ?)",
-                          (name, phone, email))
+                c.execute("INSERT INTO instructors (name, phone, email, instructor_type) VALUES (?, ?, ?, ?)",
+                        (name, phone, email, instructor_type))
                 conn.commit()
                 messagebox.showinfo("Success", "Instructor added successfully!")
             except Exception as e:
@@ -561,7 +582,7 @@ class InstructorManagement:
 
         # Create a submit button
         submit_button = tk.Button(self.add_instructor_frame, text="Submit", command=submit_data)
-        submit_button.grid(row=3, column=0, columnspan=2, pady=10)
+        submit_button.grid(row=4, column=0, columnspan=2, pady=10)  # Adjusted row number
 
     def clear_add_instructor_form(self):
         self.name_entry.delete(0, tk.END)
@@ -591,7 +612,7 @@ class InstructorManagement:
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
         inner_frame = tk.Frame(canvas)
-        canvas_window = canvas.create_window((0, 0), window=inner_frame, anchor="nw")  # Assign to canvas_window
+        canvas_window = canvas.create_window((0, 0), window=inner_frame, anchor="nw")
 
         # Create labels to display instructor details within the inner frame
         for i, instructor in enumerate(instructors):
@@ -600,6 +621,7 @@ class InstructorManagement:
             Name: {instructor[1]}
             Phone: {instructor[2]}
             Email: {instructor[3]}
+            Instructor Type: {instructor[4]}  # Add instructor type to the display
             """
             tk.Label(inner_frame, text=instructor_details, justify="left").grid(row=i, column=0, sticky="w")
 
@@ -610,39 +632,170 @@ class InstructorManagement:
 
         canvas.bind("<Configure>", on_canvas_configure)
 
+    def show_update_instructor_form(self):
+        self.hide_all_forms()
+        self.update_instructor_frame.grid()
+
+        # --- Search Functionality ---
+        tk.Label(self.update_instructor_frame, text="Search by Name:").grid(row=0, column=0, padx=5, pady=5)
+        self.search_entry = tk.Entry(self.update_instructor_frame)
+        self.search_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        search_button = tk.Button(self.update_instructor_frame, text="Search", command=self.search_instructor)
+        search_button.grid(row=0, column=2, padx=5, pady=5)
+
+        # Listbox to display search results
+        self.search_results = tk.Listbox(self.update_instructor_frame)
+        self.search_results.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+        self.search_results.bind("<<ListboxSelect>>", self.show_instructor_update_form)
+        # --- End of Search Functionality ---
+
+    def search_instructor(self):
+        search_term = self.search_entry.get()
+        if not search_term:
+            messagebox.showwarning("Warning", "Please enter a search term.")
+            return
+
+        conn = sqlite3.connect("driving_school.db")
+        c = conn.cursor()
+        try:
+            c.execute("SELECT id, name FROM instructors WHERE name LIKE ?", ('%' + search_term + '%',))
+            instructor_data = c.fetchall()
+            self.search_results.delete(0, tk.END)
+            if instructor_data:
+                for instructor in instructor_data:
+                    self.search_results.insert(tk.END, f"{instructor[0]} - {instructor[1]}")
+            else:
+                messagebox.showinfo("Info", "No instructor found with that name.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error searching instructor: {e}")
+        finally:
+            conn.close()
+
+    def show_instructor_update_form(self, event):
+        selection = self.search_results.curselection()
+        if selection:
+            selected_index = selection[0]
+            selected_instructor = self.search_results.get(selected_index)
+            instructor_id = selected_instructor.split(" - ")[0]
+
+            # Fetch instructor data
+            conn = sqlite3.connect("driving_school.db")
+            c = conn.cursor()
+            try:
+                c.execute("SELECT * FROM instructors WHERE id=?", (instructor_id,))
+                instructor_data = c.fetchone()
+
+                if instructor_data:
+                    # Create update form elements
+                    tk.Label(self.update_instructor_frame, text="Phone:").grid(row=2, column=0, padx=5, pady=5)
+                    self.phone_entry = tk.Entry(self.update_instructor_frame)
+                    self.phone_entry.grid(row=2, column=1, padx=5, pady=5)
+                    self.phone_entry.insert(0, instructor_data[2])
+
+                    tk.Label(self.update_instructor_frame, text="Email:").grid(row=3, column=0, padx=5, pady=5)
+                    self.email_entry = tk.Entry(self.update_instructor_frame)
+                    self.email_entry.grid(row=3, column=1, padx=5, pady=5)
+                    self.email_entry.insert(0, instructor_data[3])
+
+                    # Create an update button
+                    update_button = tk.Button(self.update_instructor_frame, text="Update",
+                                              command=lambda: self.update_instructor(instructor_id))
+                    update_button.grid(row=4, column=0, columnspan=2, pady=10)
+
+            except Exception as e:
+                messagebox.showerror("Error", f"Error fetching instructor data: {e}")
+            finally:
+                conn.close()
+
+    def update_instructor(self, instructor_id):
+        phone = self.phone_entry.get()
+        email = self.email_entry.get()
+
+        conn = sqlite3.connect("driving_school.db")
+        c = conn.cursor()
+        try:
+            c.execute("""UPDATE instructors SET phone=?, email=? WHERE id=?""",
+                      (phone, email, instructor_id))
+            conn.commit()
+            messagebox.showinfo("Success", "Instructor updated successfully!")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to update instructor: {e}")
+        finally:
+            conn.close()
+
     def delete_instructor(self):
         self.hide_all_forms()
         self.delete_instructor_frame.grid()
 
-        # Create input field for instructor ID
-        tk.Label(self.delete_instructor_frame, text="Enter Instructor ID to delete:").grid(row=0, column=0, padx=5, pady=5)
-        self.instructor_id_entry = tk.Entry(self.delete_instructor_frame)
-        self.instructor_id_entry.grid(row=0, column=1, padx=5, pady=5)
+        # --- Search Functionality ---
+        tk.Label(self.delete_instructor_frame, text="Search by Name:").grid(row=0, column=0, padx=5, pady=5)
+        self.search_entry = tk.Entry(self.delete_instructor_frame)
+        self.search_entry.grid(row=0, column=1, padx=5, pady=5)
 
-        # Create button to confirm deletion
-        delete_button = tk.Button(self.delete_instructor_frame, text="Delete Instructor", command=self.confirm_delete)
-        delete_button.grid(row=1, column=0, columnspan=2, pady=5)
+        search_button = tk.Button(self.delete_instructor_frame, text="Search",
+                                  command=self.search_instructor_for_deletion)
+        search_button.grid(row=0, column=2, padx=5, pady=5)
 
-    def confirm_delete(self):
-        instructor_id = self.instructor_id_entry.get()
-        if instructor_id:
-            confirm = messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete instructor with ID {instructor_id}?")
+        # Listbox to display search results
+        self.search_results = tk.Listbox(self.delete_instructor_frame)
+        self.search_results.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+        self.search_results.bind("<<ListboxSelect>>", self.show_delete_confirmation)
+        # --- End of Search Functionality ---
+
+    def search_instructor_for_deletion(self):
+        search_term = self.search_entry.get()
+        if not search_term:
+            messagebox.showwarning("Warning", "Please enter a search term.")
+            return
+
+        conn = sqlite3.connect("driving_school.db")
+        c = conn.cursor()
+        try:
+            c.execute("SELECT id, name FROM instructors WHERE name LIKE ?", ('%' + search_term + '%',))
+            instructor_data = c.fetchall()
+            self.search_results.delete(0, tk.END)  # Clear previous results
+            if instructor_data:
+                for instructor in instructor_data:
+                    self.search_results.insert(tk.END,
+                                              f"{instructor[0]} - {instructor[1]}")  # Display ID and name
+            else:
+                messagebox.showinfo("Info", "No instructor found with that name.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error searching instructor: {e}")
+        finally:
+            conn.close()
+
+    def show_delete_confirmation(self, event):
+        selection = self.search_results.curselection()
+        if selection:
+            selected_index = selection[0]
+            selected_instructor = self.search_results.get(selected_index)
+            instructor_id = selected_instructor.split(" - ")[0]  # Extract instructor ID
+
+            # Show confirmation dialog
+            confirm = messagebox.askyesno("Confirm Delete",
+                                         f"Are you sure you want to delete instructor with ID {instructor_id}?")
             if confirm:
-                conn = sqlite3.connect("driving_school.db")
-                c = conn.cursor()
-                try:
-                    c.execute("DELETE FROM instructors WHERE id=?", (instructor_id,))
-                    conn.commit()
-                    messagebox.showinfo("Success", "Instructor deleted successfully!")
-                except Exception as e:
-                    messagebox.showerror("Error", f"Failed to delete instructor: {e}")
-                finally:
-                    conn.close()
-                    self.instructor_id_entry.delete(0, tk.END)
+                self.delete_instructor_from_db(instructor_id)
+
+    def delete_instructor_from_db(self, instructor_id):
+        conn = sqlite3.connect("driving_school.db")
+        c = conn.cursor()
+        try:
+            c.execute("DELETE FROM instructors WHERE id=?", (instructor_id,))
+            conn.commit()
+            messagebox.showinfo("Success", "Instructor deleted successfully!")
+            self.search_instructor_for_deletion()  # Refresh the search results
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to delete instructor: {e}")
+        finally:
+            conn.close()
 
     def hide_all_forms(self):
         self.add_instructor_frame.grid_remove()
         self.view_instructors_frame.grid_remove()
+        self.update_instructor_frame.grid_remove()
         self.delete_instructor_frame.grid_remove()
 
 # Lesson Management Window
