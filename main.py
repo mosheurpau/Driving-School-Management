@@ -1,6 +1,9 @@
 import sqlite3
 import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk 
+from fpdf import FPDF  # type: ignore # Import FPDF library
+import webbrowser
+
 # Database Setup
 def create_db():
     conn = sqlite3.connect("driving_school.db")
@@ -886,6 +889,12 @@ class LessonManagement:
             instructor_id = self.instructor_id_entry.get()
             lesson_type = self.lesson_type_var.get()
             date = self.date_entry.get()
+            
+            # --- Input Validation ---
+            if not all([student_id, instructor_id, lesson_type, date]):
+                messagebox.showwarning("Warning", "All fields are required.")
+                return
+            # --- End of Input Validation ---
 
             conn = sqlite3.connect("driving_school.db")
             c = conn.cursor()
@@ -1083,6 +1092,86 @@ class Reporting:
 
         # Display the report in a label within the frame
         tk.Label(self.report_frame, text=report_text, justify="left").pack()
+        
+        # Print Report button
+        print_button = tk.Button(self.report_frame, text="Print Report", command=self.print_report)
+        print_button.pack(pady=10)
+        
+   
+    # Generate the report content
+    def print_report(self):
+        conn = sqlite3.connect("driving_school.db")
+        c = conn.cursor()
+
+        # Fetch data for the report
+        c.execute("SELECT * FROM students")
+        students = c.fetchall()
+        c.execute("SELECT * FROM instructors")
+        instructors = c.fetchall()
+        c.execute("SELECT * FROM lessons")
+        lessons = c.fetchall()
+
+        conn.close()
+
+        # Create a PDF object
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", size=12)
+
+        # Add report title
+        pdf.cell(200, 10, txt="Driving School Report", ln=1, align="C")
+
+        # Add student data to the PDF
+        pdf.cell(200, 10, txt="Students", ln=1, align="L")
+        for student in students:
+            student_details = f"""
+            ID: {student[0]}
+            Name: {student[1]}
+            Address: {student[2]}
+            Phone: {student[3]}
+            Progress: {student[4]}
+            Payment Status: {student[5]}
+            """
+            pdf.multi_cell(0, 10, txt=student_details)
+
+        # Add instructor data to the PDF
+        pdf.cell(200, 10, txt="Instructors", ln=1, align="L")
+        for instructor in instructors:
+            instructor_details = f"""
+            ID: {instructor[0]}
+            Name: {instructor[1]}
+            Phone: {instructor[2]}
+            Email: {instructor[3]}
+            Instructor Type: {instructor[4]}
+            """
+            pdf.multi_cell(0, 10, txt=instructor_details)
+
+        # Add lesson data to the PDF
+        pdf.cell(200, 10, txt="Lessons", ln=1, align="L")
+        for lesson in lessons:
+            lesson_details = f"""
+            ID: {lesson[0]}
+            Student ID: {lesson[1]}
+            Instructor ID: {lesson[2]}
+            Lesson Type: {lesson[3]}
+            Date: {lesson[4]}
+            Status: {lesson[5]}
+            """
+            pdf.multi_cell(0, 10, txt=lesson_details)
+
+        # Save the PDF
+        try:
+            pdf.output("driving_school_report.pdf")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to generate PDF: {e}")
+            return  # Stop further execution if PDF generation fails
+
+        # Open the generated PDF file
+        try:
+            webbrowser.open_new(r'driving_school_report.pdf')
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to open PDF file: {e}")
+        
 
     def show_student_progress_form(self):
         self.hide_all_forms()  # Hide other forms
@@ -1102,22 +1191,31 @@ class Reporting:
         if student_id:
             conn = sqlite3.connect("driving_school.db")
             c = conn.cursor()
-            c.execute("SELECT lesson_type FROM lessons WHERE student_id=?", (student_id,))
-            lessons = c.fetchall()
-            conn.close()
+            try:
+                c.execute("SELECT lesson_type FROM lessons WHERE student_id=?", (student_id,))
+                lessons = c.fetchall()
 
-            total_progress = 0
-            for lesson in lessons:
-                try:
-                    lesson_level = int(lesson[0].split(" ")[1])
-                    total_progress += lesson_level * 10
-                except (ValueError, IndexError):
-                    messagebox.showerror("Error", "Invalid lesson type format in database.")
-                    return
+                total_progress = 0
+                for lesson in lessons:
+                    lesson_type = lesson[0]  # Get the lesson type string
 
-            # Display the progress in a label within the frame
-            result_label = tk.Label(self.student_progress_frame, text=f"Student ID: {student_id}\nProgress: {total_progress}%", justify="left")
-            result_label.grid(row=2, column=0, columnspan=2, pady=5)
+                    # Calculate progress based on lesson type
+                    if lesson_type == "Introductory":
+                        total_progress += 20  # Example progress for Introductory
+                    elif lesson_type == "Standard":
+                        total_progress += 40  # Example progress for Standard
+                    elif lesson_type == "Pass Plus":
+                        total_progress += 60  # Example progress for Pass Plus
+                    # Add more elif blocks for other lesson types if needed
+
+                # Display the progress
+                result_label = tk.Label(self.student_progress_frame, text=f"Student ID: {student_id}\nProgress: {total_progress}%", justify="left")
+                result_label.grid(row=2, column=0, columnspan=2, pady=5)
+
+            except Exception as e:
+                messagebox.showerror("Error", f"Error calculating progress: {e}")
+            finally:
+                conn.close()
 
     def hide_all_forms(self):
         self.report_frame.grid_remove()
