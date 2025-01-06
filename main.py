@@ -1,50 +1,51 @@
 import sqlite3
 import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk 
-
 # Database Setup
 def create_db():
     conn = sqlite3.connect("driving_school.db")
     c = conn.cursor()
-    
+
     # Create students table
     c.execute('''CREATE TABLE IF NOT EXISTS students (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT,
-                address TEXT,
-                phone TEXT,
-                progress TEXT,
-                payment_status TEXT)''')
-    
+                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                 name TEXT,
+                 address TEXT,
+                 phone TEXT,
+                 progress TEXT,
+                 payment_status TEXT)''')
+
     # Create instructors table
     c.execute('''CREATE TABLE IF NOT EXISTS instructors (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT,
-                phone TEXT,
-                email TEXT
-                )''')
-    
-    # Create lessons table
+                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                 name TEXT,
+                 phone TEXT,
+                 email TEXT,
+                 instructor_type TEXT)''')
+
+    # Create lessons table (with fee)
     c.execute('''CREATE TABLE IF NOT EXISTS lessons (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                student_id INTEGER,
-                instructor_id INTEGER,
-                lesson_type TEXT,
-                date TEXT,
-                status TEXT,
-                FOREIGN KEY(student_id) REFERENCES students(id),
-                FOREIGN KEY(instructor_id) REFERENCES instructors(id))''')
-    
+                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                 student_id INTEGER,
+                 instructor_id INTEGER,
+                 lesson_type TEXT,
+                 date TEXT,
+                 status TEXT,
+                 fee REAL,
+                 FOREIGN KEY(student_id) REFERENCES students(id),
+                 FOREIGN KEY(instructor_id) REFERENCES instructors(id))''')
+
     # Create payments table
     c.execute('''CREATE TABLE IF NOT EXISTS payments (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                student_id INTEGER,
-                amount REAL,
-                payment_date TEXT,
-                FOREIGN KEY(student_id) REFERENCES students(id))''')
-    
+                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                 student_id INTEGER,
+                 amount REAL,
+                 payment_date TEXT,
+                 FOREIGN KEY(student_id) REFERENCES students(id))''')
+
     conn.commit()
     conn.close()
+
 
 # Main Application Window
 class Application:
@@ -370,74 +371,44 @@ class StudentManagement:
     def view_students(self):
         self.hide_all_forms()
         self.view_students_frame.grid()
-
-        # --- Search Functionality ---
-        tk.Label(self.view_students_frame, text="Search by Name:").grid(row=0, column=0, padx=5, pady=5)
-        self.search_entry = tk.Entry(self.view_students_frame)
-        self.search_entry.grid(row=0, column=1, padx=5, pady=5)
-
-        search_button = tk.Button(self.view_students_frame, text="Search", command=self.search_and_display_students)
-        search_button.grid(row=0, column=2, padx=5, pady=5)
-        # --- End of Search Functionality ---
-
-        # Frame to hold the canvas and scrollbar (placed below the search bar)
-        self.canvas_frame = tk.Frame(self.view_students_frame)
-        self.canvas_frame.grid(row=1, column=0, columnspan=3, pady=10, sticky="nsew")
-
-        # Create a canvas and scrollbar inside the canvas_frame
-        self.canvas = tk.Canvas(self.canvas_frame)
-        scrollbar = ttk.Scrollbar(self.canvas_frame, orient="vertical", command=self.canvas.yview)
-        self.canvas.configure(yscrollcommand=scrollbar.set)
-
-        # Pack canvas and scrollbar
-        self.canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-        self.inner_frame = tk.Frame(self.canvas)
-        canvas_window = self.canvas.create_window((0, 0), window=self.inner_frame, anchor="nw")
-
-        # Initial display of all students
-        self.search_and_display_students()
-
-        # Update canvas scroll region (bind to configure event)
-        def on_canvas_configure(event):
-            self.canvas.itemconfig(canvas_window, width=event.width)
-            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-
-        self.canvas.bind("<Configure>", on_canvas_configure)
-
-    def search_and_display_students(self):
-        search_term = self.search_entry.get()
-
         conn = sqlite3.connect("driving_school.db")
         c = conn.cursor()
-        try:
-            if search_term:
-                c.execute("SELECT * FROM students WHERE name LIKE ?", ('%' + search_term + '%',))
-            else:
-                c.execute("SELECT * FROM students")  # Fetch all if no search term
+        c.execute("SELECT * FROM students")
+        students = c.fetchall()
+        conn.close()
 
-            students = c.fetchall()
+        # Clear existing widgets in the frame
+        for widget in self.view_students_frame.winfo_children():
+            widget.destroy()
 
-            # Clear existing widgets in the inner frame
-            for widget in self.inner_frame.winfo_children():
-                widget.destroy()
+        # Create a canvas and scrollbar
+        canvas = tk.Canvas(self.view_students_frame)
+        scrollbar = ttk.Scrollbar(self.view_students_frame, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
 
-            # Create labels to display student details within the inner frame
-            for i, student in enumerate(students):
-                student_details = f"""
-                ID: {student[0]}
-                Name: {student[1]}
-                Address: {student[2]}
-                Phone: {student[3]}
-                Progress: {student[4]}
-                Payment Status: {student[5]}
-                """
-                tk.Label(self.inner_frame, text=student_details, justify="left").grid(row=i, column=0, sticky="w")
+        # Pack canvas and scrollbar
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
 
-        except Exception as e:
-            messagebox.showerror("Error", f"Error fetching student data: {e}")
-        finally:
-            conn.close()
+        # Create a frame inside the canvas to hold the labels
+        inner_frame = tk.Frame(canvas)
+        canvas.create_window((0, 0), window=inner_frame, anchor="nw")
+
+        # Create labels to display student details within the inner frame
+        for i, student in enumerate(students):
+            student_details = f"""
+            ID: {student[0]}
+            Name: {student[1]}
+            Address: {student[2]}
+            Phone: {student[3]}
+            Progress: {student[4]}
+            Payment Status: {student[5]}
+            """
+            tk.Label(inner_frame, text=student_details, justify="left").grid(row=i, column=0, sticky="w")
+
+        # Update canvas scroll region
+        inner_frame.update_idletasks()
+        canvas.config(scrollregion=canvas.bbox("all"))
 
     def delete_student(self):
         self.hide_all_forms()
@@ -623,72 +594,44 @@ class InstructorManagement:
         self.hide_all_forms()
         self.view_instructors_frame.grid()
 
-        # --- Search Functionality ---
-        tk.Label(self.view_instructors_frame, text="Search by Name:").grid(row=0, column=0, padx=5, pady=5)
-        self.search_entry = tk.Entry(self.view_instructors_frame)
-        self.search_entry.grid(row=0, column=1, padx=5, pady=5)
+        conn = sqlite3.connect("driving_school.db")
+        c = conn.cursor()
+        c.execute("SELECT * FROM instructors")
+        instructors = c.fetchall()
+        conn.close()
 
-        search_button = tk.Button(self.view_instructors_frame, text="Search", command=self.search_and_display_instructors)
-        search_button.grid(row=0, column=2, padx=5, pady=5)
-        # --- End of Search Functionality ---
+        # Clear existing widgets in the frame
+        for widget in self.view_instructors_frame.winfo_children():
+            widget.destroy()
 
-        # Frame to hold the canvas and scrollbar (placed below the search bar)
-        self.canvas_frame = tk.Frame(self.view_instructors_frame)
-        self.canvas_frame.grid(row=1, column=0, columnspan=3, pady=10, sticky="nsew")
-
-        # Create a canvas and scrollbar inside the canvas_frame
-        self.canvas = tk.Canvas(self.canvas_frame)  # Make canvas an instance variable
-        scrollbar = ttk.Scrollbar(self.canvas_frame, orient="vertical", command=self.canvas.yview)
-        self.canvas.configure(yscrollcommand=scrollbar.set)
+        # Create a canvas and scrollbar
+        canvas = tk.Canvas(self.view_instructors_frame)
+        scrollbar = ttk.Scrollbar(self.view_instructors_frame, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
 
         # Pack canvas and scrollbar
-        self.canvas.pack(side="left", fill="both", expand=True)
+        canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
-        self.inner_frame = tk.Frame(self.canvas)  # Make inner_frame an instance variable
-        canvas_window = self.canvas.create_window((0, 0), window=self.inner_frame, anchor="nw")
+        inner_frame = tk.Frame(canvas)
+        canvas_window = canvas.create_window((0, 0), window=inner_frame, anchor="nw")
 
-        # Initial display of all instructors
-        self.search_and_display_instructors()  # Call the search function to display instructors
+        # Create labels to display instructor details within the inner frame
+        for i, instructor in enumerate(instructors):
+            instructor_details = f"""
+            ID: {instructor[0]}
+            Name: {instructor[1]}
+            Phone: {instructor[2]}
+            Email: {instructor[3]}
+            Instructor Type: {instructor[4]} 
+            """
+            tk.Label(inner_frame, text=instructor_details, justify="left").grid(row=i, column=0, sticky="w")
 
         # Update canvas scroll region (bind to configure event)
         def on_canvas_configure(event):
-            self.canvas.itemconfig(canvas_window, width=event.width)
-            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+            canvas.itemconfig(canvas_window, width=event.width)
+            canvas.configure(scrollregion=canvas.bbox("all"))
 
-        self.canvas.bind("<Configure>", on_canvas_configure)      
-
-    def search_and_display_instructors(self):
-        search_term = self.search_entry.get()
-
-        conn = sqlite3.connect("driving_school.db")
-        c = conn.cursor()
-        try:
-            if search_term:
-                c.execute("SELECT * FROM instructors WHERE name LIKE ?", ('%' + search_term + '%',))
-            else:
-                c.execute("SELECT * FROM instructors")  # Fetch all if no search term
-
-            instructors = c.fetchall()
-
-            # Clear existing widgets in the inner frame
-            for widget in self.inner_frame.winfo_children():
-                widget.destroy()
-
-            # Create labels to display instructor details within the inner frame
-            for i, instructor in enumerate(instructors):
-                instructor_details = f"""
-                ID: {instructor[0]}
-                Name: {instructor[1]}
-                Phone: {instructor[2]}
-                Email: {instructor[3]}
-                Instructor Type: {instructor[4]} 
-                """
-                tk.Label(self.inner_frame, text=instructor_details, justify="left").grid(row=i, column=0, sticky="w")
-
-        except Exception as e:
-            messagebox.showerror("Error", f"Error fetching instructor data: {e}")
-        finally:
-            conn.close()
+        canvas.bind("<Configure>", on_canvas_configure)
 
     def show_update_instructor_form(self):
         self.hide_all_forms()
@@ -967,48 +910,78 @@ class LessonManagement:
         self.lesson_type_var.set("")
         self.date_entry.delete(0, tk.END)
 
+
     def view_lessons(self):
         self.hide_all_forms()
         self.view_lessons_frame.grid()
 
-        conn = sqlite3.connect("driving_school.db")
-        c = conn.cursor()
-        c.execute("SELECT * FROM lessons")
-        lessons = c.fetchall()
-        conn.close()
+        # --- Search Functionality ---
+        tk.Label(self.view_lessons_frame, text="Search by Student ID:").grid(row=0, column=0, padx=5, pady=5)
+        self.search_entry = tk.Entry(self.view_lessons_frame)
+        self.search_entry.grid(row=0, column=1, padx=5, pady=5)
 
-        # Clear existing widgets in the frame
-        for widget in self.view_lessons_frame.winfo_children():
-            widget.destroy()
+        search_button = tk.Button(self.view_lessons_frame, text="Search", command=self.search_and_display_lessons)
+        search_button.grid(row=0, column=2, padx=5, pady=5)
+        # --- End of Search Functionality ---
 
-        # Create a canvas and scrollbar
-        canvas = tk.Canvas(self.view_lessons_frame)
-        scrollbar = ttk.Scrollbar(self.view_lessons_frame, orient="vertical", command=canvas.yview)
-        canvas.configure(yscrollcommand=scrollbar.set)
+        # Frame to hold the canvas and scrollbar
+        self.canvas_frame = tk.Frame(self.view_lessons_frame)
+        self.canvas_frame.grid(row=1, column=0, columnspan=3, pady=10, sticky="nsew")
+
+        # Create a canvas and scrollbar inside the canvas_frame
+        self.canvas = tk.Canvas(self.canvas_frame)
+        scrollbar = ttk.Scrollbar(self.canvas_frame, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=scrollbar.set)
 
         # Pack canvas and scrollbar
-        canvas.pack(side="left", fill="both", expand=True)
+        self.canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+        self.inner_frame = tk.Frame(self.canvas)
+        canvas_window = self.canvas.create_window((0, 0), window=self.inner_frame, anchor="nw")
 
-        # Create a frame inside the canvas to hold the labels
-        inner_frame = tk.Frame(canvas)
-        canvas.create_window((0, 0), window=inner_frame, anchor="nw")
+        # Initial display of all lessons
+        self.search_and_display_lessons()
 
-        # Create labels to display lesson details within the inner frame
-        for i, lesson in enumerate(lessons):
-            lesson_details = f"""
-            ID: {lesson[0]}
-            Student ID: {lesson[1]}
-            Instructor ID: {lesson[2]}
-            Lesson Type: {lesson[3]}
-            Date: {lesson[4]}
-            Status: {lesson[5]}
-            """
-            tk.Label(inner_frame, text=lesson_details, justify="left").grid(row=i, column=0, sticky="w")
+        # Update canvas scroll region (bind to configure event)
+        def on_canvas_configure(event):
+            self.canvas.itemconfig(canvas_window, width=event.width)
+            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
-        # Update canvas scroll region
-        inner_frame.update_idletasks()
-        canvas.config(scrollregion=canvas.bbox("all"))
+        self.canvas.bind("<Configure>", on_canvas_configure)  # No 'self' argument here
+
+    def search_and_display_lessons(self):
+        search_term = self.search_entry.get()
+
+        conn = sqlite3.connect("driving_school.db")
+        c = conn.cursor()
+        try:
+            if search_term:
+                c.execute("SELECT * FROM lessons WHERE student_id LIKE ?", ('%' + search_term + '%',))
+            else:
+                c.execute("SELECT * FROM lessons")  # Fetch all if no search term
+
+            lessons = c.fetchall()
+
+            # Clear existing widgets in the inner frame
+            for widget in self.inner_frame.winfo_children():
+                widget.destroy()
+
+            # Create labels to display lesson details
+            for i, lesson in enumerate(lessons):
+                lesson_details = f"""
+                ID: {lesson[0]}
+                Student ID: {lesson[1]}
+                Instructor ID: {lesson[2]}
+                Lesson Type: {lesson[3]}
+                Date: {lesson[4]}
+                Status: {lesson[5]}
+                """
+                tk.Label(self.inner_frame, text=lesson_details, justify="left").grid(row=i, column=0, sticky="w")
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Error fetching lesson data: {e}")
+        finally:
+            conn.close()
 
     def delete_lesson(self):
         self.hide_all_forms()
