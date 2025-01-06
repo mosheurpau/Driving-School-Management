@@ -621,7 +621,7 @@ class InstructorManagement:
             Name: {instructor[1]}
             Phone: {instructor[2]}
             Email: {instructor[3]}
-            Instructor Type: {instructor[4]}  # Add instructor type to the display
+            Instructor Type: {instructor[4]} 
             """
             tk.Label(inner_frame, text=instructor_details, justify="left").grid(row=i, column=0, sticky="w")
 
@@ -698,10 +698,17 @@ class InstructorManagement:
                     self.email_entry.grid(row=3, column=1, padx=5, pady=5)
                     self.email_entry.insert(0, instructor_data[3])
 
+                    # Instructor Type dropdown (for updating)
+                    tk.Label(self.update_instructor_frame, text="Instructor Type:").grid(row=4, column=0, padx=5, pady=5)
+                    self.instructor_type_var = tk.StringVar(value=instructor_data[4])  # Set initial value from database
+                    instructor_type_combobox = ttk.Combobox(self.update_instructor_frame, textvariable=self.instructor_type_var)
+                    instructor_type_combobox['values'] = ("Full-time", "Part-time")
+                    instructor_type_combobox.grid(row=4, column=1, padx=5, pady=5)
+
                     # Create an update button
                     update_button = tk.Button(self.update_instructor_frame, text="Update",
-                                              command=lambda: self.update_instructor(instructor_id))
-                    update_button.grid(row=4, column=0, columnspan=2, pady=10)
+                                            command=lambda: self.update_instructor(instructor_id))
+                    update_button.grid(row=5, column=0, columnspan=2, pady=10)
 
             except Exception as e:
                 messagebox.showerror("Error", f"Error fetching instructor data: {e}")
@@ -711,12 +718,13 @@ class InstructorManagement:
     def update_instructor(self, instructor_id):
         phone = self.phone_entry.get()
         email = self.email_entry.get()
+        instructor_type = self.instructor_type_var.get()
 
         conn = sqlite3.connect("driving_school.db")
         c = conn.cursor()
         try:
-            c.execute("""UPDATE instructors SET phone=?, email=? WHERE id=?""",
-                      (phone, email, instructor_id))
+            c.execute("""UPDATE instructors SET phone=?, email=?,  instructor_type=? WHERE id=?""",
+                      (phone, email,  instructor_type, instructor_id))
             conn.commit()
             messagebox.showinfo("Success", "Instructor updated successfully!")
         except Exception as e:
