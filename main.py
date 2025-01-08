@@ -1031,7 +1031,6 @@ class LessonManagement:
         lesson_type_combobox.bind("<<ComboboxSelected>>", on_lesson_type_select)
         
 
-        # --- Function to handle the submit button click ---
         def submit_data():
             # Get the selected student and instructor IDs
             selected_student = self.student_id_var.get()
@@ -1053,33 +1052,28 @@ class LessonManagement:
                     return
 
                 if lesson_type == "Pass Plus":
-                    # Check if the student has completed Introductory and Standard lessons
-                    conn = sqlite3.connect("driving_school.db")
-                    c = conn.cursor()
-                    try:
-                        c.execute("SELECT lesson_type FROM lessons WHERE student_id=? AND status='Booked'", (student_id,))
-                        completed_lessons = c.fetchall()
-
-                        if ('Introductory',) in completed_lessons and ('Standard',) in completed_lessons:
-                            # Proceed with booking
-                            try:
-                                # Include student_name and instructor_name in the INSERT statement
-                                c.execute(
-                                    "INSERT INTO lessons (student_id, student_name, instructor_id, instructor_name, lesson_type, date, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                                    (student_id, student_name, instructor_id, instructor_name, lesson_type, date, status),
-                                )
-                                conn.commit()
-                                messagebox.showinfo("Success", "Lesson booked successfully!")
-                            except Exception as e:
-                                messagebox.showerror("Error", f"Failed to book lesson: {e}")
-                        else:
-                            messagebox.showwarning("Warning", "Student must complete Introductory and Standard lessons before booking Pass Plus.")
-                            return
-
-                    except Exception as e:
-                        messagebox.showerror("Error", f"Failed to check completed lessons: {e}")
-                    finally:
-                        conn.close()
+                    # Ask for confirmation
+                    confirm = messagebox.askyesno("Confirm Booking", "Have you completed Introductory and Standard lessons?")
+                    if confirm:
+                        # Proceed with booking (no database check)
+                        conn = sqlite3.connect("driving_school.db")
+                        c = conn.cursor()
+                        try:
+                            # Include student_name and instructor_name in the INSERT statement
+                            c.execute(
+                                "INSERT INTO lessons (student_id, student_name, instructor_id, instructor_name, lesson_type, date, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                                (student_id, student_name, instructor_id, instructor_name, lesson_type, date, status),
+                            )
+                            conn.commit()
+                            messagebox.showinfo("Success", "Lesson booked successfully!")
+                        except Exception as e:
+                            messagebox.showerror("Error", f"Failed to book lesson: {e}")
+                        finally:
+                            conn.close()
+                            self.clear_book_lesson_form()
+                    else:
+                        # User clicked "No" in the confirmation dialog, so do not proceed
+                        return
                 else:
                     # For other lesson types, proceed with booking directly
                     conn = sqlite3.connect("driving_school.db")
