@@ -31,7 +31,9 @@ def create_db():
     c.execute('''CREATE TABLE IF NOT EXISTS lessons (
                  id INTEGER PRIMARY KEY AUTOINCREMENT,
                  student_id INTEGER,
+                 student_name TEXT
                  instructor_id INTEGER,
+                 instructor_name TEXT
                  lesson_type TEXT,
                  date TEXT,
                  payment INTEGER,  -- Payment for the lesson
@@ -46,6 +48,7 @@ def create_db():
                  amount INTEGER,
                  payment_date TEXT,
                  FOREIGN KEY(student_id) REFERENCES students(id))''')
+
 
     conn.commit()
     conn.close()
@@ -1026,6 +1029,8 @@ class LessonManagement:
             if selected_student and selected_instructor:
                 student_id = selected_student.split(" - ")[0]
                 instructor_id = selected_instructor.split(" - ")[0]
+                student_name = selected_student.split(" - ")[1]  # Extract student name
+                instructor_name = selected_instructor.split(" - ")[1]  # Extract instructor name
 
                 lesson_type = self.lesson_type_var.get()
                 date = self.date_entry.get()
@@ -1047,9 +1052,10 @@ class LessonManagement:
                         if ('Introductory',) in completed_lessons and ('Standard',) in completed_lessons:
                             # Proceed with booking
                             try:
+                                # Include student_name and instructor_name in the INSERT statement
                                 c.execute(
-                                    "INSERT INTO lessons (student_id, instructor_id, lesson_type, date, status) VALUES (?, ?, ?, ?, ?)",
-                                    (student_id, instructor_id, lesson_type, date, status),
+                                    "INSERT INTO lessons (student_id, instructor_id, student_name, instructor_name, lesson_type, date, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                                    (student_id, instructor_id, student_name, instructor_name, lesson_type, date, status),
                                 )
                                 conn.commit()
                                 messagebox.showinfo("Success", "Lesson booked successfully!")
@@ -1068,9 +1074,10 @@ class LessonManagement:
                     conn = sqlite3.connect("driving_school.db")
                     c = conn.cursor()
                     try:
+                        # Include student_name and instructor_name in the INSERT statement
                         c.execute(
-                            "INSERT INTO lessons (student_id, instructor_id, lesson_type, date, status) VALUES (?, ?, ?, ?, ?)",
-                            (student_id, instructor_id, lesson_type, date, status),
+                            "INSERT INTO lessons (student_id, instructor_id, student_name, instructor_name, lesson_type, date, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                            (student_id, instructor_id, student_name, instructor_name, lesson_type, date, status),
                         )
                         conn.commit()
                         messagebox.showinfo("Success", "Lesson booked successfully!")
@@ -1149,8 +1156,9 @@ class LessonManagement:
 
                 lesson_details = f"""
                 ID: {lesson[0]}
-                Student ID: {lesson[1]}
+                Student Name: {lesson[7] if len(lesson) > 7 else ""} 
                 Instructor ID: {lesson[2]}
+                Instructor Name: {lesson[8] if len(lesson) > 8 else ""} 
                 Lesson Type: {lesson_type}
                 Date: {lesson[4]}
                 Status: {lesson[5]}
@@ -1205,7 +1213,9 @@ class LessonManagement:
                 lesson_details = f"""
                 ID: {lesson[0]}
                 Student ID: {lesson[1]}
+                Student Name: {lesson[7] if len(lesson) > 7 else ""}   
                 Instructor ID: {lesson[2]}
+                Instructor Name: {lesson[8] if len(lesson) > 8 else ""} 
                 Lesson Type: {lesson_type}
                 Date: {lesson[4]}
                 Status: {lesson[5]}
@@ -1378,10 +1388,13 @@ class Reporting:
             lesson_details = f"""
             ID: {lesson[0]}
             Student ID: {lesson[1]}
+            Student Name: {lesson[7] if len(lesson) > 7 else ""}   
             Instructor ID: {lesson[2]}
+            Instructor Name: {lesson[8] if len(lesson) > 8 else ""} 
             Lesson Type: {lesson[3]}
             Date: {lesson[4]}
             Status: {lesson[5]}
+            
             """
             pdf.multi_cell(0, 10, txt=lesson_details)
 
