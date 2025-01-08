@@ -360,7 +360,7 @@ class StudentManagement:
 
                     # Create an update button
                     update_button = tk.Button(self.update_student_frame, text="Update", command=lambda: self.update_student(student_id))
-                    update_button.grid(row=6, column=0, columnspan=2, pady=10) 
+                    update_button.grid(row=6, column=0, columnspan=2, pady=10, sticky="ew", padx=50) 
 
             except Exception as e:
                 messagebox.showerror("Error", f"Error fetching student data: {e}")
@@ -638,7 +638,7 @@ class InstructorManagement:
 
         # Create a submit button
         submit_button = tk.Button(self.add_instructor_frame, text="Submit", command=submit_data)
-        submit_button.grid(row=4, column=0, columnspan=2, pady=10, padx=40)  # Adjusted row number
+        submit_button.grid(row=4, column=0, columnspan=2, pady=10, sticky="ew", padx=50) 
 
     def clear_add_instructor_form(self):
         self.name_entry.delete(0, tk.END)
@@ -792,7 +792,7 @@ class InstructorManagement:
                     # Create an update button
                     update_button = tk.Button(self.update_instructor_frame, text="Update",
                                             command=lambda: self.update_instructor(instructor_id))
-                    update_button.grid(row=5, column=0, columnspan=2, pady=10)
+                    update_button.grid(row=5, column=0, columnspan=2, pady=10, sticky="ew", padx=50)
 
             except Exception as e:
                 messagebox.showerror("Error", f"Error fetching instructor data: {e}")
@@ -919,15 +919,17 @@ class LessonManagement:
         self.view_lessons_button = ttk.Button(self.window, text="View Lessons", style='Lesson.TButton', 
                                             command=self.view_lessons)
         self.view_lessons_button.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
-
-        self.delete_lesson_button = ttk.Button(self.window, text="Delete Lesson", style='Lesson.TButton',
-                                                command=self.delete_lesson)
-        self.delete_lesson_button.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
-        
         
         self.update_lesson_button = ttk.Button(self.window, text="Update Lesson", style='Lesson.TButton',
                                                 command=self.show_update_lesson_form)
-        self.update_lesson_button.grid(row=0, column=3, padx=10, pady=10, sticky="ew")
+        self.update_lesson_button.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
+
+        self.delete_lesson_button = ttk.Button(self.window, text="Delete Lesson", style='Lesson.TButton',
+                                                command=self.delete_lesson)
+        self.delete_lesson_button.grid(row=0, column=3, padx=10, pady=10, sticky="ew")
+        
+        
+       
 
 
         # Configure column weights (4 columns now)
@@ -1096,7 +1098,7 @@ class LessonManagement:
 
         # --- Create a submit button ---
         submit_button = tk.Button(self.book_lesson_frame, text="Submit", command=submit_data)
-        submit_button.grid(row=6, column=0, columnspan=2, pady=10)
+        submit_button.grid(row=6, column=0,columnspan=2, pady=10, sticky="ew", padx=50)
 
     def clear_book_lesson_form(self):
         self.student_id_entry.delete(0, tk.END)
@@ -1312,7 +1314,7 @@ class LessonManagement:
                     # Create an update button
                     update_button = tk.Button(self.update_lesson_frame, text="Update",
                                               command=lambda: self.update_lesson(lesson_id))
-                    update_button.grid(row=5, column=0, columnspan=2, pady=10)
+                    update_button.grid(row=5, column=0, columnspan=2, pady=10, sticky="ew", padx=50)
 
             except Exception as e:
                 messagebox.showerror("Error", f"Error fetching lesson data: {e}")
@@ -1345,7 +1347,7 @@ class LessonManagement:
 
         # Create button to confirm deletion
         delete_button = tk.Button(self.delete_lesson_frame, text="Delete Lesson", command=self.confirm_delete_lesson)
-        delete_button.grid(row=1, column=0, columnspan=2, pady=5)
+        delete_button.grid(row=1, column=0, columnspan=2, pady=10, sticky="ew", padx=50)
 
     def confirm_delete_lesson(self):
         lesson_id = self.lesson_id_entry.get()
