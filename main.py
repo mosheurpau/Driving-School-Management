@@ -27,15 +27,15 @@ def create_db():
                  email TEXT,
                  instructor_type TEXT)''')
 
-    # Create lessons table (with fee)
+    # Create lessons table (with payment column)
     c.execute('''CREATE TABLE IF NOT EXISTS lessons (
                  id INTEGER PRIMARY KEY AUTOINCREMENT,
                  student_id INTEGER,
                  instructor_id INTEGER,
                  lesson_type TEXT,
                  date TEXT,
+                 payment INTEGER,  -- Payment for the lesson
                  status TEXT,
-                 fee REAL,
                  FOREIGN KEY(student_id) REFERENCES students(id),
                  FOREIGN KEY(instructor_id) REFERENCES instructors(id))''')
 
@@ -43,7 +43,7 @@ def create_db():
     c.execute('''CREATE TABLE IF NOT EXISTS payments (
                  id INTEGER PRIMARY KEY AUTOINCREMENT,
                  student_id INTEGER,
-                 amount REAL,
+                 amount INTEGER,
                  payment_date TEXT,
                  FOREIGN KEY(student_id) REFERENCES students(id))''')
 
@@ -891,6 +891,7 @@ class InstructorManagement:
 class LessonManagement:
     def __init__(self, parent_frame):
         self.window = parent_frame
+        self.student_id_entry = None 
 
         # Create button style
         button_style = ttk.Style()
@@ -941,54 +942,120 @@ class LessonManagement:
         self.hide_all_forms()
         self.book_lesson_frame.grid()
 
-        # Create labels and entry fields for booking lesson within the frame
-        tk.Label(self.book_lesson_frame, text="Student ID:").grid(row=0, column=0, padx=5, pady=5)
-        self.student_id_entry = tk.Entry(self.book_lesson_frame)
-        self.student_id_entry.grid(row=0, column=1, padx=5, pady=5)
+        # --- Student ID Dropdown ---
+        tk.Label(self.book_lesson_frame, text="Student:").grid(row=0, column=0, padx=5, pady=5)
+        self.student_id_var = tk.StringVar()
+        student_id_combobox = ttk.Combobox(self.book_lesson_frame, textvariable=self.student_id_var)
 
-        tk.Label(self.book_lesson_frame, text="Instructor ID:").grid(row=1, column=0, padx=5, pady=5)
-        self.instructor_id_entry = tk.Entry(self.book_lesson_frame)
-        self.instructor_id_entry.grid(row=1, column=1, padx=5, pady=5)
+        # Fetch student IDs and names from the database
+        conn = sqlite3.connect("driving_school.db")
+        c = conn.cursor()
+        c.execute("SELECT id, name FROM students")
+        student_data = c.fetchall()
+        conn.close()
 
+        student_id_combobox['values'] = [f"{id} - {name}" for id, name in student_data]
+        student_id_combobox.grid(row=0, column=1, padx=5, pady=5)
+
+        # --- Instructor ID Dropdown ---
+        tk.Label(self.book_lesson_frame, text="Instructor:").grid(row=1, column=0, padx=5, pady=5)
+        self.instructor_id_var = tk.StringVar()
+        instructor_id_combobox = ttk.Combobox(self.book_lesson_frame, textvariable=self.instructor_id_var)
+
+        # Fetch instructor IDs and names from the database
+        conn = sqlite3.connect("driving_school.db")
+        c = conn.cursor()
+        c.execute("SELECT id, name FROM instructors")
+        instructor_data = c.fetchall()
+        conn.close()
+
+        instructor_id_combobox['values'] = [f"{id} - {name}" for id, name in instructor_data]
+        instructor_id_combobox.grid(row=1, column=1, padx=5, pady=5)
+
+        # --- Lesson Type Combobox ---
         tk.Label(self.book_lesson_frame, text="Lesson Type:").grid(row=2, column=0, padx=5, pady=5)
         self.lesson_type_var = tk.StringVar()
         lesson_type_combobox = ttk.Combobox(self.book_lesson_frame, textvariable=self.lesson_type_var)
         lesson_type_combobox['values'] = ('Introductory', 'Standard', 'Pass Plus', 'Driving Test')
         lesson_type_combobox.grid(row=2, column=1, padx=5, pady=5)
 
+        # --- Date Entry ---
         tk.Label(self.book_lesson_frame, text="Date (YYYY-MM-DD):").grid(row=3, column=0, padx=5, pady=5)
         self.date_entry = tk.Entry(self.book_lesson_frame)
         self.date_entry.grid(row=3, column=1, padx=5, pady=5)
 
-        # Function to handle the submit button click
-        def submit_data():
-            student_id = self.student_id_entry.get()
-            instructor_id = self.instructor_id_entry.get()
+        # --- Payment Entry (disabled) ---
+        tk.Label(self.book_lesson_frame, text="Payment:").grid(row=4, column=0, padx=5, pady=5)
+        self.payment_entry = tk.Entry(self.book_lesson_frame, state="disabled")
+        self.payment_entry.grid(row=4, column=1, padx=5, pady=5)
+
+        # --- Status Dropdown ---
+        tk.Label(self.book_lesson_frame, text="Status:").grid(row=5, column=0, padx=5, pady=5)
+        self.status_var = tk.StringVar(value="Unpaid")
+        status_combobox = ttk.Combobox(self.book_lesson_frame, textvariable=self.status_var)
+        status_combobox['values'] = ("Paid", "Unpaid")
+        status_combobox.grid(row=5, column=1, padx=5, pady=5)
+
+        # --- Function to handle lesson type selection and update payment ---
+        def on_lesson_type_select(event=None):
             lesson_type = self.lesson_type_var.get()
-            date = self.date_entry.get()
-            
-            # --- Input Validation ---
-            if not all([student_id, instructor_id, lesson_type, date]):
-                messagebox.showwarning("Warning", "All fields are required.")
-                return
-            # --- End of Input Validation ---
+            payment = 0
+            if lesson_type == "Introductory":
+                payment = 100
+            elif lesson_type == "Standard":
+                payment = 200
+            elif lesson_type == "Pass Plus":
+                payment = 300
+            elif lesson_type == "Driving Test":
+                payment = 350
 
-            conn = sqlite3.connect("driving_school.db")
-            c = conn.cursor()
-            try:
-                c.execute("INSERT INTO lessons (student_id, instructor_id, lesson_type, date, status) VALUES (?, ?, ?, ?, 'Booked')",
-                          (student_id, instructor_id, lesson_type, date))
-                conn.commit()
-                messagebox.showinfo("Success", "Lesson booked successfully!")
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to book lesson: {e}")
-            finally:
-                conn.close()
-                self.clear_book_lesson_form()
+            self.payment_entry.config(state="normal")
+            self.payment_entry.delete(0, tk.END)
+            self.payment_entry.insert(0, str(payment))
+            self.payment_entry.config(state="disabled")
 
-        # Create a submit button
+        # --- Bind the function to the Combobox ---
+        lesson_type_combobox.bind("<<ComboboxSelected>>", on_lesson_type_select)
+
+        # --- Function to handle the submit button click ---
+        def submit_data():
+            # Get the selected student and instructor IDs
+            selected_student = self.student_id_var.get()
+            selected_instructor = self.instructor_id_var.get()
+
+            if selected_student and selected_instructor:
+                student_id = selected_student.split(" - ")[0]
+                instructor_id = selected_instructor.split(" - ")[0]
+
+                lesson_type = self.lesson_type_var.get()
+                date = self.date_entry.get()
+                status = self.status_var.get()
+
+                # Input Validation
+                if not all([student_id, instructor_id, lesson_type, date, status]):
+                    messagebox.showwarning("Warning", "All fields are required.")
+                    return
+
+                conn = sqlite3.connect("driving_school.db")
+                c = conn.cursor()
+                try:
+                    c.execute(
+                        "INSERT INTO lessons (student_id, instructor_id, lesson_type, date, status) VALUES (?, ?, ?, ?, ?)",
+                        (student_id, instructor_id, lesson_type, date, status),
+                    )
+                    conn.commit()
+                    messagebox.showinfo("Success", "Lesson booked successfully!")
+                except Exception as e:
+                    messagebox.showerror("Error", f"Failed to book lesson: {e}")
+                finally:
+                    conn.close()
+                    self.clear_book_lesson_form()
+            else:
+                messagebox.showwarning("Warning", "Please select both student and instructor.")
+
+        # --- Create a submit button ---
         submit_button = tk.Button(self.book_lesson_frame, text="Submit", command=submit_data)
-        submit_button.grid(row=4, column=0, columnspan=2, pady=10)
+        submit_button.grid(row=6, column=0, columnspan=2, pady=10)
 
     def clear_book_lesson_form(self):
         self.student_id_entry.delete(0, tk.END)
@@ -1026,7 +1093,46 @@ class LessonManagement:
         canvas_window = self.canvas.create_window((0, 0), window=self.inner_frame, anchor="nw")
 
         # Initial display of all lessons
-        self.search_and_display_lessons()
+        conn = sqlite3.connect("driving_school.db")
+        c = conn.cursor()
+        try:
+            c.execute("SELECT * FROM lessons")  # Fetch all lessons
+            lessons = c.fetchall()
+
+            # Clear existing widgets in the inner frame
+            for widget in self.inner_frame.winfo_children():
+                widget.destroy()
+
+            # Create labels to display lesson details
+            for i, lesson in enumerate(lessons):
+                lesson_type = lesson[3]  # Get the lesson type from the tuple
+
+                # Calculate payment based on lesson type
+                payment = 0
+                if lesson_type == "Introductory":
+                    payment = 100
+                elif lesson_type == "Standard":
+                    payment = 200
+                elif lesson_type == "Pass Plus":
+                    payment = 300
+                elif lesson_type == "Driving Test":
+                    payment = 350
+
+                lesson_details = f"""
+                ID: {lesson[0]}
+                Student ID: {lesson[1]}
+                Instructor ID: {lesson[2]}
+                Lesson Type: {lesson_type}
+                Date: {lesson[4]}
+                Status: {lesson[5]}
+                Payment: {payment}
+                """
+                tk.Label(self.inner_frame, text=lesson_details, justify="left").grid(row=i, column=0, sticky="w")
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Error fetching lesson data: {e}")
+        finally:
+            conn.close()
 
         # Update canvas scroll region (bind to configure event)
         def on_canvas_configure(event):
@@ -1054,13 +1160,27 @@ class LessonManagement:
 
             # Create labels to display lesson details
             for i, lesson in enumerate(lessons):
+                lesson_type = lesson[3]  # Get the lesson type from the tuple
+
+                # Calculate payment based on lesson type
+                payment = 0
+                if lesson_type == "Introductory":
+                    payment = 100
+                elif lesson_type == "Standard":
+                    payment = 200
+                elif lesson_type == "Pass Plus":
+                    payment = 300
+                elif lesson_type == "Driving Test":
+                    payment = 350
+
                 lesson_details = f"""
                 ID: {lesson[0]}
                 Student ID: {lesson[1]}
                 Instructor ID: {lesson[2]}
-                Lesson Type: {lesson[3]}
+                Lesson Type: {lesson_type}
                 Date: {lesson[4]}
                 Status: {lesson[5]}
+                Payment: {payment}
                 """
                 tk.Label(self.inner_frame, text=lesson_details, justify="left").grid(row=i, column=0, sticky="w")
 
