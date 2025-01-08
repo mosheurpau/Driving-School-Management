@@ -185,6 +185,8 @@ class StudentManagement:
         # Configure column weights
         for i in range(4):
             self.window.columnconfigure(i, weight=1)
+            
+        
 
         # Frames for forms (initially hidden)
         self.add_student_frame = tk.Frame(self.window)
@@ -206,6 +208,7 @@ class StudentManagement:
     def show_add_student_form(self):
         self.hide_all_forms()
         self.add_student_frame.grid()
+        
         # Create labels and entry fields for the add student form within the frame
         tk.Label(self.add_student_frame, text="Name:").grid(row=0, column=0, padx=5, pady=5)
         self.name_entry = tk.Entry(self.add_student_frame)
@@ -260,17 +263,10 @@ class StudentManagement:
                 conn.close()
                 self.clear_add_student_form()
 
-        # Create a submit button with styling (using ttk.Button)
-        submit_button_style = ttk.Style()
-        submit_button_style.configure('Submit.TButton',
-                                    font=('Arial', 10, 'bold'),
-                                    foreground="#00A300",
-                                    background='#2874A6',
-                                    padding=2,
-                                    relief="flat")
+       
 
         submit_button = ttk.Button(self.add_student_frame, text="Submit", style='Submit.TButton', command=submit_data)
-        submit_button.grid(row=5, column=0, columnspan=2, pady=10, sticky="ew")  
+        submit_button.grid(row=5, column=0, columnspan=2, pady=10, sticky="ew", padx=50)
 
     def clear_add_student_form(self):
         self.name_entry.delete(0, tk.END)
@@ -639,7 +635,7 @@ class InstructorManagement:
 
         # Create a submit button
         submit_button = tk.Button(self.add_instructor_frame, text="Submit", command=submit_data)
-        submit_button.grid(row=4, column=0, columnspan=2, pady=10)  # Adjusted row number
+        submit_button.grid(row=4, column=0, columnspan=2, pady=10, padx=40)  # Adjusted row number
 
     def clear_add_instructor_form(self):
         self.name_entry.delete(0, tk.END)
@@ -1255,20 +1251,57 @@ class Reporting:
         
 
     def show_student_progress_form(self):
-        self.hide_all_forms()  # Hide other forms
-        self.student_progress_frame.grid()  # Show the student progress form
+        self.hide_all_forms()
+        self.student_progress_frame.grid()
 
-        # Create input field for student ID
-        tk.Label(self.student_progress_frame, text="Enter Student ID:").grid(row=0, column=0, padx=5, pady=5)
-        self.student_id_entry = tk.Entry(self.student_progress_frame)
-        self.student_id_entry.grid(row=0, column=1, padx=5, pady=5)
+        # --- Search Functionality ---
+        tk.Label(self.student_progress_frame, text="Search by Student Name:").grid(row=0, column=0, padx=5, pady=5)
+        self.search_entry = tk.Entry(self.student_progress_frame)
+        self.search_entry.grid(row=0, column=1, padx=5, pady=5)
 
-        # Create button to calculate progress
-        calculate_button = tk.Button(self.student_progress_frame, text="Calculate Progress", command=self.calculate_progress)
-        calculate_button.grid(row=1, column=0, columnspan=2, pady=5)
+        search_button = tk.Button(self.student_progress_frame, text="Search", command=self.search_student_for_progress)
+        search_button.grid(row=0, column=2, padx=5, pady=5)
 
-    def calculate_progress(self):
-        student_id = self.student_id_entry.get()
+        # Listbox to display search results
+        self.search_results = tk.Listbox(self.student_progress_frame)
+        self.search_results.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+        self.search_results.bind("<<ListboxSelect>>", self.calculate_progress_for_selected_student)
+        # --- End of Search Functionality ---
+
+    def search_student_for_progress(self):
+        search_term = self.search_entry.get()
+        if not search_term:
+            messagebox.showwarning("Warning", "Please enter a search term.")
+            return
+
+        conn = sqlite3.connect("driving_school.db")
+        c = conn.cursor()
+        try:
+            c.execute("SELECT id, name FROM students WHERE name LIKE ?", ('%' + search_term + '%',))
+            student_data = c.fetchall()
+            self.search_results.delete(0, tk.END)
+            if student_data:
+                for student in student_data:
+                    self.search_results.insert(tk.END, f"{student[0]} - {student[1]}")
+            else:
+                messagebox.showinfo("Info", "No student found with that name.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error searching student: {e}")
+        finally:
+            conn.close()
+
+    def calculate_progress_for_selected_student(self, event):
+        selection = self.search_results.curselection()
+        if selection:
+            selected_index = selection[0]
+            selected_student = self.search_results.get(selected_index)
+            student_id = selected_student.split(" - ")[0]  # Extract student ID
+
+            # Now you have the student_id, you can use your existing calculate_progress logic
+            self.calculate_progress(student_id)  # Pass the student_id to calculate_progress
+
+
+    def calculate_progress(self, student_id):  # Modified to accept student_id
         if student_id:
             conn = sqlite3.connect("driving_school.db")
             c = conn.cursor()
@@ -1282,11 +1315,13 @@ class Reporting:
 
                     # Calculate progress based on lesson type
                     if lesson_type == "Introductory":
-                        total_progress += 20  # Example progress for Introductory
+                        total_progress = 20  # Example progress for Introductory
                     elif lesson_type == "Standard":
-                        total_progress += 40  # Example progress for Standard
+                        total_progress = 60  # Example progress for Standard
                     elif lesson_type == "Pass Plus":
-                        total_progress += 60  # Example progress for Pass Plus
+                        total_progress = 95  # Example progress for Pass Plus
+                    elif lesson_type == "Driving Test":
+                        total_progress = 100
                     # Add more elif blocks for other lesson types if needed
 
                 # Display the progress
