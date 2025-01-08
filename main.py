@@ -1419,7 +1419,7 @@ class Reporting:
         # Generate the report content
         conn = sqlite3.connect("driving_school.db")
         c = conn.cursor()
-        c.execute("SELECT COUNT(*) FROM lessons WHERE status = 'Booked'")
+        c.execute("SELECT COUNT(*) FROM lessons WHERE status = 'Paid' OR status = 'Unpaid'")
         lessons_count = c.fetchone()[0]
         c.execute("SELECT COUNT(*) FROM students")
         students_count = c.fetchone()[0]
