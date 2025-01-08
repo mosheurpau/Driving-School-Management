@@ -895,6 +895,7 @@ class LessonManagement:
     def __init__(self, parent_frame):
         self.window = parent_frame
         self.student_id_entry = None 
+        
 
         # Create button style
         button_style = ttk.Style()
@@ -922,24 +923,33 @@ class LessonManagement:
         self.delete_lesson_button = ttk.Button(self.window, text="Delete Lesson", style='Lesson.TButton',
                                                 command=self.delete_lesson)
         self.delete_lesson_button.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
+        
+        
+        self.update_lesson_button = ttk.Button(self.window, text="Update Lesson", style='Lesson.TButton',
+                                                command=self.show_update_lesson_form)
+        self.update_lesson_button.grid(row=0, column=3, padx=10, pady=10, sticky="ew")
 
 
-        # Configure column weights (3 columns now)
-        for i in range(3):  
+        # Configure column weights (4 columns now)
+        for i in range(4):  
             self.window.columnconfigure(i, weight=1)
 
         # Frames for forms (initially hidden)
         self.book_lesson_frame = tk.Frame(self.window)
-        self.book_lesson_frame.grid(row=1, column=0, columnspan=3, pady=10)
+        self.book_lesson_frame.grid(row=1, column=0, columnspan=4, pady=10)
         self.book_lesson_frame.grid_remove()
 
         self.view_lessons_frame = tk.Frame(self.window)
-        self.view_lessons_frame.grid(row=1, column=0, columnspan=3, pady=10)
+        self.view_lessons_frame.grid(row=1, column=0, columnspan=4, pady=10)
         self.view_lessons_frame.grid_remove()
 
         self.delete_lesson_frame = tk.Frame(self.window)
-        self.delete_lesson_frame.grid(row=1, column=0, columnspan=3, pady=10)
+        self.delete_lesson_frame.grid(row=1, column=0, columnspan=4, pady=10)
         self.delete_lesson_frame.grid_remove()
+        
+        self.update_lesson_frame = tk.Frame(self.window)
+        self.update_lesson_frame.grid(row=1, column=0, columnspan=4, pady=10)
+        self.update_lesson_frame.grid_remove()
 
     def show_book_lesson_form(self):
         self.hide_all_forms()
@@ -1019,6 +1029,7 @@ class LessonManagement:
 
         # --- Bind the function to the Combobox ---
         lesson_type_combobox.bind("<<ComboboxSelected>>", on_lesson_type_select)
+        
 
         # --- Function to handle the submit button click ---
         def submit_data():
@@ -1054,8 +1065,8 @@ class LessonManagement:
                             try:
                                 # Include student_name and instructor_name in the INSERT statement
                                 c.execute(
-                                    "INSERT INTO lessons (student_id, instructor_id, student_name, instructor_name, lesson_type, date, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                                    (student_id, instructor_id, student_name, instructor_name, lesson_type, date, status),
+                                    "INSERT INTO lessons (student_id, student_name, instructor_id, instructor_name, lesson_type, date, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                                    (student_id, student_name, instructor_id, instructor_name, lesson_type, date, status),
                                 )
                                 conn.commit()
                                 messagebox.showinfo("Success", "Lesson booked successfully!")
@@ -1076,8 +1087,8 @@ class LessonManagement:
                     try:
                         # Include student_name and instructor_name in the INSERT statement
                         c.execute(
-                            "INSERT INTO lessons (student_id, instructor_id, student_name, instructor_name, lesson_type, date, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                            (student_id, instructor_id, student_name, instructor_name, lesson_type, date, status),
+                            "INSERT INTO lessons (student_id, student_name, instructor_id, instructor_name, lesson_type, date, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                            (student_id, student_name, instructor_id, instructor_name, lesson_type, date, status),
                         )
                         conn.commit()
                         messagebox.showinfo("Success", "Lesson booked successfully!")
@@ -1156,12 +1167,13 @@ class LessonManagement:
 
                 lesson_details = f"""
                 ID: {lesson[0]}
-                Student Name: {lesson[7] if len(lesson) > 7 else ""} 
+                Instructor ID: {lesson[1]}
+                Student Name: {lesson[6] if len(lesson) > 2 else ""} 
                 Instructor ID: {lesson[2]}
-                Instructor Name: {lesson[8] if len(lesson) > 8 else ""} 
-                Lesson Type: {lesson_type}
-                Date: {lesson[4]}
-                Status: {lesson[5]}
+                Instructor Name: {lesson[7] if len(lesson) > 4 else ""} 
+                Lesson Type: {lesson[3]}
+                Date: {lesson[4]if len(lesson) > 1 else ""}
+                Status: {lesson[5]if len(lesson) > 5 else ""}      
                 Payment: {payment}
                 """
                 tk.Label(self.inner_frame, text=lesson_details, justify="left").grid(row=i, column=0, sticky="w")
@@ -1212,19 +1224,119 @@ class LessonManagement:
 
                 lesson_details = f"""
                 ID: {lesson[0]}
-                Student ID: {lesson[1]}
-                Student Name: {lesson[7] if len(lesson) > 7 else ""}   
+                Instructor ID: {lesson[1]}
+                Student Name: {lesson[6] if len(lesson) > 2 else ""} 
                 Instructor ID: {lesson[2]}
-                Instructor Name: {lesson[8] if len(lesson) > 8 else ""} 
-                Lesson Type: {lesson_type}
-                Date: {lesson[4]}
-                Status: {lesson[5]}
+                Instructor Name: {lesson[7] if len(lesson) > 4 else ""} 
+                Lesson Type: {lesson[3]}
+                Date: {lesson[4]if len(lesson) > 1 else ""}
+                Status: {lesson[5]if len(lesson) > 5 else ""}      
                 Payment: {payment}
                 """
                 tk.Label(self.inner_frame, text=lesson_details, justify="left").grid(row=i, column=0, sticky="w")
 
         except Exception as e:
             messagebox.showerror("Error", f"Error fetching lesson data: {e}")
+        finally:
+            conn.close()
+            
+    
+    def show_update_lesson_form(self):
+        self.hide_all_forms()
+        self.update_lesson_frame.grid()
+
+        # --- Search Functionality ---
+        tk.Label(self.update_lesson_frame, text="Search by Lesson ID:").grid(row=0, column=0, padx=5, pady=5)
+        self.search_entry = tk.Entry(self.update_lesson_frame)
+        self.search_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        search_button = tk.Button(self.update_lesson_frame, text="Search", command=self.search_lesson_by_lesson_id)
+        search_button.grid(row=0, column=2, padx=5, pady=5)
+
+        # Listbox to display search results
+        self.search_results = tk.Listbox(self.update_lesson_frame)
+        self.search_results.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+        self.search_results.bind("<<ListboxSelect>>", self.show_lesson_update_form)
+        # --- End of Search Functionality ---
+
+    def search_lesson_by_lesson_id(self):
+        search_term = self.search_entry.get()
+        if not search_term:
+            messagebox.showwarning("Warning", "Please enter a search term.")
+            return
+
+        conn = sqlite3.connect("driving_school.db")
+        c = conn.cursor()
+        try:
+            # Fetch lesson ID and student name
+            c.execute("SELECT l.id, s.name FROM lessons l JOIN students s ON l.student_id = s.id WHERE l.id LIKE ?", ('%' + search_term + '%',))
+            lesson_data = c.fetchall()
+            self.search_results.delete(0, tk.END)
+            if lesson_data:
+                for lesson in lesson_data:
+                    self.search_results.insert(tk.END, f"{lesson[0]} - {lesson[1]}")  # Display lesson ID and student name
+            else:
+                messagebox.showinfo("Info", "No lesson found with that ID.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error searching lesson: {e}")
+        finally:
+            conn.close()
+
+    def show_lesson_update_form(self, event):
+        selection = self.search_results.curselection()
+        if selection:
+            selected_index = selection[0]
+            selected_lesson = self.search_results.get(selected_index)
+            lesson_id = selected_lesson.split(" - ")[0]  # Extract lesson ID
+
+            # Fetch lesson data
+            conn = sqlite3.connect("driving_school.db")
+            c = conn.cursor()
+            try:
+                c.execute("SELECT * FROM lessons WHERE id=?", (lesson_id,))
+                lesson_data = c.fetchone()
+
+                if lesson_data:
+                    # Display student name (non-editable)
+                    tk.Label(self.update_lesson_frame, text="Student Name:").grid(row=2, column=0, padx=5, pady=5)
+                    student_name_label = tk.Label(self.update_lesson_frame, text=lesson_data[7])  # Assuming student_name is at index 7
+                    student_name_label.grid(row=2, column=1, padx=5, pady=5)
+
+                    # --- Date Entry ---
+                    tk.Label(self.update_lesson_frame, text="Date (YYYY-MM-DD):").grid(row=3, column=0, padx=5, pady=5)
+                    self.date_entry = tk.Entry(self.update_lesson_frame)
+                    self.date_entry.grid(row=3, column=1, padx=5, pady=5)
+                    self.date_entry.insert(0, lesson_data[4])
+
+                    # --- Status Dropdown ---
+                    tk.Label(self.update_lesson_frame, text="Status:").grid(row=4, column=0, padx=5, pady=5)
+                    self.status_var = tk.StringVar(value=lesson_data[6])
+                    status_combobox = ttk.Combobox(self.update_lesson_frame, textvariable=self.status_var)
+                    status_combobox['values'] = ("Paid", "Unpaid")
+                    status_combobox.grid(row=4, column=1, padx=5, pady=5)
+
+                    # Create an update button
+                    update_button = tk.Button(self.update_lesson_frame, text="Update",
+                                              command=lambda: self.update_lesson(lesson_id))
+                    update_button.grid(row=5, column=0, columnspan=2, pady=10)
+
+            except Exception as e:
+                messagebox.showerror("Error", f"Error fetching lesson data: {e}")
+            finally:
+                conn.close()
+                
+    def update_lesson(self, lesson_id):
+        date = self.date_entry.get()
+        status = self.status_var.get()
+
+        conn = sqlite3.connect("driving_school.db")
+        c = conn.cursor()
+        try:
+            c.execute("""UPDATE lessons SET date=?, status=? WHERE id=?""", (date, status, lesson_id))
+            conn.commit()
+            messagebox.showinfo("Success", "Lesson updated successfully!")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to update lesson: {e}")
         finally:
             conn.close()
 
@@ -1262,6 +1374,7 @@ class LessonManagement:
         self.book_lesson_frame.grid_remove()
         self.view_lessons_frame.grid_remove()
         self.delete_lesson_frame.grid_remove()
+        self.update_lesson_frame.grid_remove()
 
 # Reporting Window
 class Reporting:
@@ -1387,14 +1500,13 @@ class Reporting:
         for lesson in lessons:
             lesson_details = f"""
             ID: {lesson[0]}
-            Student ID: {lesson[1]}
-            Student Name: {lesson[7] if len(lesson) > 7 else ""}   
+            Instructor ID: {lesson[1]}
+            Student Name: {lesson[6] if len(lesson) > 2 else ""} 
             Instructor ID: {lesson[2]}
-            Instructor Name: {lesson[8] if len(lesson) > 8 else ""} 
+            Instructor Name: {lesson[7] if len(lesson) > 4 else ""} 
             Lesson Type: {lesson[3]}
-            Date: {lesson[4]}
-            Status: {lesson[5]}
-            
+            Date: {lesson[4]if len(lesson) > 1 else ""}
+            Status: {lesson[5]if len(lesson) > 5 else ""}      
             """
             pdf.multi_cell(0, 10, txt=lesson_details)
 
