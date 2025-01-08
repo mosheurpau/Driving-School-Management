@@ -1036,20 +1036,49 @@ class LessonManagement:
                     messagebox.showwarning("Warning", "All fields are required.")
                     return
 
-                conn = sqlite3.connect("driving_school.db")
-                c = conn.cursor()
-                try:
-                    c.execute(
-                        "INSERT INTO lessons (student_id, instructor_id, lesson_type, date, status) VALUES (?, ?, ?, ?, ?)",
-                        (student_id, instructor_id, lesson_type, date, status),
-                    )
-                    conn.commit()
-                    messagebox.showinfo("Success", "Lesson booked successfully!")
-                except Exception as e:
-                    messagebox.showerror("Error", f"Failed to book lesson: {e}")
-                finally:
-                    conn.close()
-                    self.clear_book_lesson_form()
+                if lesson_type == "Pass Plus":
+                    # Check if the student has completed Introductory and Standard lessons
+                    conn = sqlite3.connect("driving_school.db")
+                    c = conn.cursor()
+                    try:
+                        c.execute("SELECT lesson_type FROM lessons WHERE student_id=? AND status='Booked'", (student_id,))
+                        completed_lessons = c.fetchall()
+
+                        if ('Introductory',) in completed_lessons and ('Standard',) in completed_lessons:
+                            # Proceed with booking
+                            try:
+                                c.execute(
+                                    "INSERT INTO lessons (student_id, instructor_id, lesson_type, date, status) VALUES (?, ?, ?, ?, ?)",
+                                    (student_id, instructor_id, lesson_type, date, status),
+                                )
+                                conn.commit()
+                                messagebox.showinfo("Success", "Lesson booked successfully!")
+                            except Exception as e:
+                                messagebox.showerror("Error", f"Failed to book lesson: {e}")
+                        else:
+                            messagebox.showwarning("Warning", "Student must complete Introductory and Standard lessons before booking Pass Plus.")
+                            return
+
+                    except Exception as e:
+                        messagebox.showerror("Error", f"Failed to check completed lessons: {e}")
+                    finally:
+                        conn.close()
+                else:
+                    # For other lesson types, proceed with booking directly
+                    conn = sqlite3.connect("driving_school.db")
+                    c = conn.cursor()
+                    try:
+                        c.execute(
+                            "INSERT INTO lessons (student_id, instructor_id, lesson_type, date, status) VALUES (?, ?, ?, ?, ?)",
+                            (student_id, instructor_id, lesson_type, date, status),
+                        )
+                        conn.commit()
+                        messagebox.showinfo("Success", "Lesson booked successfully!")
+                    except Exception as e:
+                        messagebox.showerror("Error", f"Failed to book lesson: {e}")
+                    finally:
+                        conn.close()
+                        self.clear_book_lesson_form()
             else:
                 messagebox.showwarning("Warning", "Please select both student and instructor.")
 
