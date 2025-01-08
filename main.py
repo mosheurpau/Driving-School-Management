@@ -211,7 +211,6 @@ class StudentManagement:
     def show_add_student_form(self):
         self.hide_all_forms()
         self.add_student_frame.grid()
-        
         # Create labels and entry fields for the add student form within the frame
         tk.Label(self.add_student_frame, text="Name:").grid(row=0, column=0, padx=5, pady=5)
         self.name_entry = tk.Entry(self.add_student_frame)
@@ -1376,7 +1375,7 @@ class LessonManagement:
 class Reporting:
     def __init__(self, parent_frame):
         self.window = parent_frame
-
+        self.report_frame = tk.Frame(self.window)
         # Create button style
         button_style = ttk.Style()
         button_style.configure('Report.TButton', 
@@ -1417,6 +1416,10 @@ class Reporting:
     def show_report(self):
         self.hide_all_forms()  # Hide other forms
         self.report_frame.grid()  # Show the report frame
+        
+        # Clear existing widgets in the report frame
+        for widget in self.report_frame.winfo_children():
+            widget.destroy()
 
         # Generate the report content
         conn = sqlite3.connect("driving_school.db")
@@ -1436,12 +1439,18 @@ class Reporting:
         """
 
         # Display the report in a label within the frame
-        tk.Label(self.report_frame, text=report_text, justify="left").pack()
-        
-        # Print Report button
-        print_button = tk.Button(self.report_frame, text="Print Report", command=self.print_report)
-        print_button.pack(pady=10)
-        
+        tk.Label(self.report_frame, text=report_text, justify="left", font=("Arial", 12, "bold"), padx=20, bg="white",  ).pack()
+
+        # Print Report button with styling
+        print_button = tk.Button(self.report_frame, text="Print Report", command=self.print_report,
+            font=("Arial", 12, "bold"),
+            bg="white", fg="#00A300",
+            padx=20, pady=10,
+            relief="raised", borderwidth=3,  # Increased borderwidth for roundness
+            highlightthickness=0,  # Remove default highlight border
+            highlightbackground="blue", highlightcolor="blue")  # Blue border color
+        print_button.pack(pady=50, padx=100)
+                
    
     # Generate the report content
     def print_report(self):
